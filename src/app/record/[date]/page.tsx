@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Settings, TrendingUp, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send } from "lucide-react";
@@ -23,12 +23,19 @@ function fmtDay(dateStr: string) {
 export default function RecordDetailPage({ params }: { params: Promise<{ date: string }> }) {
   const { date } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [items,   setItems]   = useState<ItemMaster[]>([]);
   const [record,  setRecord]  = useState<BloodRecord | null>(null);
   const [allRecords, setAllRecords] = useState<BloodRecord[]>([]);
-  const [showAbnOnly, setShowAbnOnly] = useState(false);
-  const [showRequiredOnly, setShowRequiredOnly] = useState(false);
+  const [showAbnOnly, setShowAbnOnly] = useState(() => searchParams.get("abn") === "1");
+  const [showRequiredOnly, setShowRequiredOnly] = useState(() => searchParams.get("req") === "1");
+
+  // フィルター状態をURLパラメータで引き継ぐ
+  const withFilter = useCallback((path: string) => {
+    const q = [showAbnOnly ? "abn=1" : "", showRequiredOnly ? "req=1" : ""].filter(Boolean).join("&");
+    return q ? `${path}?${q}` : path;
+  }, [showAbnOnly, showRequiredOnly]);
 
   // AI チャット
   const [aiMessages,   setAiMessages]   = useState<AIMessage[]>([]);
@@ -218,7 +225,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             <button
               onClick={() => {
                 const target = prevRecord ?? (allRecords.length > 1 ? allRecords[0] : null);
-                target && router.replace(`/record/${target.date}`);
+                target && router.replace(withFilter(`/record/${target.date}`));
               }}
               disabled={allRecords.length <= 1}
               className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
@@ -229,7 +236,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             <button
               onClick={() => {
                 const target = nextRecord ?? (allRecords.length > 1 ? allRecords[allRecords.length - 1] : null);
-                target && router.replace(`/record/${target.date}`);
+                target && router.replace(withFilter(`/record/${target.date}`));
               }}
               disabled={allRecords.length <= 1}
               className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
