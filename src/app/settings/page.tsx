@@ -151,7 +151,7 @@ function SortableItemRow({
               <label className="text-[11px] text-gray-500 font-medium">基準値 下限</label>
               <input
                 type="text"
-                inputMode="numeric"
+                inputMode="decimal"
                 value={editValues.rangeMin}
                 onChange={(e) => onEditValuesChange({ ...editValues, rangeMin: sanitizeNum(e.target.value) })}
                 placeholder="—"
@@ -162,7 +162,7 @@ function SortableItemRow({
               <label className="text-[11px] text-gray-500 font-medium">基準値 上限</label>
               <input
                 type="text"
-                inputMode="numeric"
+                inputMode="decimal"
                 value={editValues.rangeMax}
                 onChange={(e) => onEditValuesChange({ ...editValues, rangeMax: sanitizeNum(e.target.value) })}
                 placeholder="—"
@@ -740,7 +740,7 @@ export default function SettingsPage() {
                   <label className="text-[11px] text-gray-500 font-medium">基準値 下限</label>
                   <input
                     type="text"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     value={newItem.rangeMin}
                     onChange={(e) => setNewItem({ ...newItem, rangeMin: sanitizeNum(e.target.value) })}
                     placeholder="—"
@@ -751,7 +751,7 @@ export default function SettingsPage() {
                   <label className="text-[11px] text-gray-500 font-medium">基準値 上限</label>
                   <input
                     type="text"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     value={newItem.rangeMax}
                     onChange={(e) => setNewItem({ ...newItem, rangeMax: sanitizeNum(e.target.value) })}
                     placeholder="—"
