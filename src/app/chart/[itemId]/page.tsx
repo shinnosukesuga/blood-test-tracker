@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -14,9 +14,8 @@ import {
   ReferenceArea,
   ResponsiveContainer,
 } from "recharts";
-import { ItemMaster, BloodRecord, HealthEvent } from "@/lib/types";
-import DatePicker from "@/components/DatePicker";
-import { loadItems, loadRecords, loadEvents, loadSettings, saveEvent, generateId } from "@/lib/storage";
+import { ItemMaster, BloodRecord } from "@/lib/types";
+import { loadItems, loadRecords, loadSettings } from "@/lib/storage";
 import { isAbnormal, getAbnormalType } from "@/lib/itemMaster";
 
 // 年ごとの色
@@ -76,11 +75,9 @@ export default function ChartPage() {
   const [item, setItem] = useState<ItemMaster | null>(null);
   const [allItems, setAllItems] = useState<ItemMaster[]>([]);
   const [records, setRecords] = useState<BloodRecord[]>([]);
-  const [events, setEvents] = useState<HealthEvent[]>([]);
-  const [showAddEvent, setShowAddEvent] = useState(false);
-  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().slice(0, 10));
-  const [newEventLabel, setNewEventLabel] = useState("");
-  const [showEventDatePicker, setShowEventDatePicker] = useState(false);
+  interface MemoEntry { id: string; text: string; createdAt: string; }
+  const [memoInput, setMemoInput] = useState("");
+  const [memoEntries, setMemoEntries] = useState<MemoEntry[]>([]);
   const STORAGE_KEY = "chart_hidden_years";
   const currentYear = String(new Date().getFullYear());
 
@@ -128,8 +125,11 @@ export default function ChartPage() {
     setItem(found ?? null);
     setAllItems(items);
     setRecords(loadRecords());
-    setEvents(loadEvents());
     setSettings(loadSettings());
+    try {
+      const raw = localStorage.getItem(`item_memo_${itemId}`);
+      setMemoEntries(raw ? JSON.parse(raw) : []);
+    } catch { setMemoEntries([]); }
   }, [itemId]);
 
   const currentIdx = allItems.findIndex((i) => i.id === itemId);
@@ -171,17 +171,19 @@ export default function ChartPage() {
       ? ((latestValue - prevValue) / prevValue) * 100
       : null;
 
-  const handleAddEvent = () => {
-    if (!newEventLabel.trim()) return;
-    const event: HealthEvent = {
-      id: generateId(),
-      date: newEventDate,
-      label: newEventLabel.trim(),
-    };
-    saveEvent(event);
-    setEvents(loadEvents());
-    setNewEventLabel("");
-    setShowAddEvent(false);
+  const handleMemoAdd = () => {
+    if (!memoInput.trim()) return;
+    const entry = { id: `${Date.now()}`, text: memoInput.trim(), createdAt: new Date().toISOString() };
+    const next = [entry, ...memoEntries];
+    localStorage.setItem(`item_memo_${itemId}`, JSON.stringify(next));
+    setMemoEntries(next);
+    setMemoInput("");
+  };
+
+  const handleMemoDelete = (id: string) => {
+    const next = memoEntries.filter(e => e.id !== id);
+    localStorage.setItem(`item_memo_${itemId}`, JSON.stringify(next));
+    setMemoEntries(next);
   };
 
   if (!item) {
@@ -231,81 +233,63 @@ export default function ChartPage() {
       <main className="pb-8">
         {/* サマリーカード */}
         <div className="bg-white mx-4 mt-4 rounded-2xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-xs text-gray-400">最新値 ({latestRecord?.date})</p>
-              {latestValue !== undefined ? (
-                <p
-                  className={`text-3xl font-bold mt-1 ${
-                    getAbnormalType(item, latestValue) === "high" ? "text-red-600" :
-                    getAbnormalType(item, latestValue) === "low"  ? "text-blue-600" :
-                    "text-gray-800"
-                  }`}
-                >
-                  {latestValue}
-                  <span className="text-sm font-normal text-gray-400 ml-1">{item.unit}</span>
-                </p>
-              ) : (
-                <p className="text-2xl font-bold text-gray-300 mt-1">—</p>
-              )}
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-400">基準値</p>
-              <p className="text-sm font-medium text-gray-600 mt-1">
-                {item.range.min !== null || item.range.max !== null
-                  ? `${item.range.min ?? ""}〜${item.range.max ?? ""}`
-                  : "—"}
+          <p className="text-sm font-semibold text-gray-700">最新値 ({latestRecord?.date})</p>
+          <div className="flex items-end justify-between mt-1">
+            {latestValue !== undefined ? (
+              <p className={`text-3xl font-bold ${
+                getAbnormalType(item, latestValue) === "high" ? "text-red-600" :
+                getAbnormalType(item, latestValue) === "low"  ? "text-blue-600" :
+                "text-gray-800"
+              }`}>
+                {latestValue}
+                <span className="text-sm font-normal text-gray-400 ml-1">{item.unit}</span>
               </p>
-              {change !== null && prevValue !== undefined && latestValue !== undefined && (
-                <div className="mt-1 relative">
-                  <p
-                    className={`text-sm font-semibold inline-flex items-center gap-1 ${
-                      !settings.changeHighlight || Math.abs(change) <= CHANGE_THRESHOLD
-                        ? "text-gray-800"
-                        : change > 0
-                        ? "text-red-500"
-                        : "text-blue-500"
-                    }`}
-                  >
-                    前回比: {latestValue > prevValue ? "+" : "-"}{Math.abs(latestValue - prevValue).toFixed(1)} {item.unit}（{latestValue > prevValue ? "+" : "-"}{Math.abs(change).toFixed(1)}%）
-                    <button
-                      onClick={() => {
-                        if (changeHelpTimerRef.current) clearTimeout(changeHelpTimerRef.current);
-                        setShowChangeHelp(v => {
-                          if (!v) {
-                            changeHelpTimerRef.current = setTimeout(() => setShowChangeHelp(false), 4000);
-                          }
-                          return !v;
-                        });
-                      }}
-                      className="w-4 h-4 rounded-full bg-gray-200 text-gray-500 text-[10px] font-bold flex items-center justify-center shrink-0 leading-none"
-                    >?</button>
-                  </p>
-                  {showChangeHelp && (
-                    <div className="absolute right-0 top-6 z-10 bg-gray-800 text-white text-xs rounded-lg p-3 w-56 shadow-lg text-left">
-                      <p className="font-bold mb-1">前回比の色強調ルール</p>
-                      <p>前回値からの変化率が <span className="font-bold text-yellow-300">{CHANGE_THRESHOLD}%</span> を超えた場合に色がつきます。</p>
-                      <p className="mt-1"><span className="text-red-400">赤</span>：増加　<span className="text-blue-400">青</span>：減少</p>
-                      <p className="mt-1 text-gray-400">閾値は設定から変更できます。</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            ) : (
+              <p className="text-2xl font-bold text-gray-300">—</p>
+            )}
+            {change !== null && prevValue !== undefined && latestValue !== undefined && (
+              <div className="relative">
+                <p className={`text-sm font-semibold inline-flex items-center gap-1 ${
+                  !settings.changeHighlight || Math.abs(change) <= CHANGE_THRESHOLD
+                    ? "text-gray-800"
+                    : change > 0 ? "text-red-500" : "text-blue-500"
+                }`}>
+                  前回比: {latestValue > prevValue ? "+" : "-"}{Math.abs(latestValue - prevValue).toFixed(1)} {item.unit}（{latestValue > prevValue ? "+" : "-"}{Math.abs(change).toFixed(1)}%）
+                  <button
+                    onClick={() => {
+                      if (changeHelpTimerRef.current) clearTimeout(changeHelpTimerRef.current);
+                      setShowChangeHelp(v => {
+                        if (!v) {
+                          changeHelpTimerRef.current = setTimeout(() => setShowChangeHelp(false), 4000);
+                        }
+                        return !v;
+                      });
+                    }}
+                    className="w-4 h-4 rounded-full bg-gray-200 text-gray-500 text-[10px] font-bold flex items-center justify-center shrink-0 leading-none"
+                  >?</button>
+                </p>
+                {showChangeHelp && (
+                  <div className="absolute right-0 top-6 z-10 bg-gray-800 text-white text-xs rounded-lg p-3 w-56 shadow-lg text-left">
+                    <p className="font-bold mb-1">前回比の色強調ルール</p>
+                    <p>前回値からの変化率が <span className="font-bold text-yellow-300">{CHANGE_THRESHOLD}%</span> を超えた場合に色がつきます。</p>
+                    <p className="mt-1"><span className="text-red-400">赤</span>：増加　<span className="text-blue-400">青</span>：減少</p>
+                    <p className="mt-1 text-gray-400">閾値は設定から変更できます。</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+          {(item.range.min !== null || item.range.max !== null) && (
+            <p className="text-xs text-gray-400 mt-1">
+              基準値: {item.range.min ?? ""}〜{item.range.max ?? ""}
+            </p>
+          )}
         </div>
 
         {/* チャート */}
         <div className="bg-white mt-3 mx-4 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+          <div className="px-4 pt-4 pb-2">
             <h2 className="text-sm font-semibold text-gray-700">年度別トレンド</h2>
-            <button
-              onClick={() => setShowAddEvent((v) => !v)}
-              className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700"
-            >
-              <Plus size={14} />
-              イベント追加
-            </button>
           </div>
 
           {years.length === 0 ? (
@@ -421,20 +405,6 @@ export default function ChartPage() {
                     />
                   )}
 
-                  {/* イベントライン */}
-                  {events.map((ev) => {
-                    const month = parseInt(ev.date.split("-")[1]);
-                    return (
-                      <ReferenceLine
-                        key={ev.id}
-                        x={month}
-                        stroke="#a78bfa"
-                        strokeDasharray="3 3"
-                        label={{ value: ev.label, fontSize: 9, fill: "#7c3aed", angle: -90 }}
-                      />
-                    );
-                  })}
-
                   {/* 年ごとのライン */}
                   {years.map((year, idx) =>
                     hiddenYears.has(year) ? null : (
@@ -465,41 +435,45 @@ export default function ChartPage() {
           )}
         </div>
 
-        {/* イベント追加フォーム */}
-        {showAddEvent && (
-          <div className="bg-white mx-4 mt-3 rounded-2xl shadow-sm border border-gray-100 p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">イベントを追加</h3>
-            <div className="space-y-2">
-              <button
-                onClick={() => setShowEventDatePicker(true)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-left text-gray-800"
-              >
-                {newEventDate || "日付を選択"}
-              </button>
-              {showEventDatePicker && (
-                <DatePicker
-                  value={newEventDate}
-                  onChange={setNewEventDate}
-                  onClose={() => setShowEventDatePicker(false)}
-                />
-              )}
-              <input
-                type="text"
-                value={newEventLabel}
-                onChange={(e) => setNewEventLabel(e.target.value.slice(0, 100))}
-                maxLength={100}
-                placeholder="例: 花粉症開始、忘年会など"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400"
-              />
-              <button
-                onClick={handleAddEvent}
-                className="w-full py-2 bg-red-600 text-white rounded-lg text-sm font-medium"
-              >
-                追加
-              </button>
-            </div>
+        {/* メモ */}
+        <div className="bg-white mx-4 mt-3 rounded-2xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">メモ</h3>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={memoInput}
+              onChange={(e) => setMemoInput(e.target.value)}
+placeholder="メモを入力..."
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400"
+            />
+            <button
+              onClick={handleMemoAdd}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium active:bg-red-700 shrink-0"
+            >
+              追加
+            </button>
           </div>
-        )}
+          {memoEntries.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {memoEntries.map(entry => (
+                <li key={entry.id} className="flex items-start gap-2 text-sm">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-gray-400 tabular-nums">
+                      {new Date(entry.createdAt).toLocaleString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                    <p className="text-gray-700 break-all">{entry.text}</p>
+                  </div>
+                  <button
+                    onClick={() => handleMemoDelete(entry.id)}
+                    className="text-gray-300 active:text-red-400 shrink-0 mt-0.5 text-xs"
+                  >
+                    削除
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         {/* 過去の値一覧 */}
         <div className="bg-white mx-4 mt-3 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
