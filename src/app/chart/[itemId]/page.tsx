@@ -205,16 +205,6 @@ export default function ChartPage() {
           </button>
           <div className="flex-1 min-w-0 text-center">
             <h1 className="text-base font-bold truncate">{item.name}</h1>
-            <p className="text-red-200 text-xs truncate">
-              {(() => {
-                const isAsciiAbbr = (s: string) =>
-                  !/[\u3000-\u9FFF\u30A0-\u30FF\u3040-\u309F]/.test(s) && s !== item.name;
-                const aliases = item.aliases.filter(isAsciiAbbr);
-                return aliases.length > 0
-                  ? `${aliases.join(" / ")}${item.unit ? ` · ${item.unit}` : ""}`
-                  : (item.unit ?? "");
-              })()}
-            </p>
           </div>
           {/* 項目間ナビ */}
           <div className="flex items-center gap-1 shrink-0">

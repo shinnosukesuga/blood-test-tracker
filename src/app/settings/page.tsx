@@ -28,12 +28,12 @@ const EMPTY_NEW_ITEM = {
 interface SortableItemRowProps {
   item: ItemMaster;
   editingId: string | null;
-  editValues: { rangeMin: string; rangeMax: string; unit: string };
+  editValues: { name: string; alias: string; rangeMin: string; rangeMax: string; unit: string };
   reorderMode: boolean;
   onStartEdit: (item: ItemMaster) => void;
   onSaveEdit: (id: string) => void;
   onToggleVisibility: (id: string) => void;
-  onEditValuesChange: (v: { rangeMin: string; rangeMax: string; unit: string }) => void;
+  onEditValuesChange: (v: { name: string; alias: string; rangeMin: string; rangeMax: string; unit: string }) => void;
 }
 
 function SortableItemRow({
@@ -112,7 +112,30 @@ function SortableItemRow({
       {/* 編集フォーム（展開） */}
       {editingId === item.id && (
         <div className="px-4 pb-3 bg-gray-50 border-t border-gray-100 space-y-2">
-          <div className="grid grid-cols-3 gap-2 mt-2">
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <div>
+              <label className="text-[11px] text-gray-500 font-medium">名称</label>
+              <input
+                type="text"
+                value={editValues.name}
+                onChange={(e) => onEditValuesChange({ ...editValues, name: e.target.value })}
+                maxLength={100}
+                className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-gray-500 font-medium">英字略称</label>
+              <input
+                type="text"
+                value={editValues.alias}
+                onChange={(e) => onEditValuesChange({ ...editValues, alias: e.target.value })}
+                maxLength={50}
+                placeholder="AST, ALT など"
+                className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="text-[11px] text-gray-500 font-medium">単位</label>
               <input
@@ -169,8 +192,8 @@ export default function SettingsPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ rangeMin: string; rangeMax: string; unit: string }>({
-    rangeMin: "", rangeMax: "", unit: "",
+  const [editValues, setEditValues] = useState<{ name: string; alias: string; rangeMin: string; rangeMax: string; unit: string }>({
+    name: "", alias: "", rangeMin: "", rangeMax: "", unit: "",
   });
   const [reorderMode, setReorderMode] = useState(false);
   const [showDataHelp, setShowDataHelp] = useState(false);
@@ -337,7 +360,12 @@ export default function SettingsPage() {
       return;
     }
     setEditingId(item.id);
+    const isAsciiAbbr = (s: string) =>
+      !/[\u3000-\u9FFF\u30A0-\u30FF\u3040-\u309F]/.test(s) && s !== item.name;
+    const abbr = item.aliases.filter(isAsciiAbbr)[0] ?? "";
     setEditValues({
+      name: item.name,
+      alias: abbr,
       rangeMin: item.range.min !== null ? String(item.range.min) : "",
       rangeMax: item.range.max !== null ? String(item.range.max) : "",
       unit: item.unit,
@@ -345,18 +373,26 @@ export default function SettingsPage() {
   };
 
   const saveEdit = (id: string) => {
-    const updated = items.map((i) =>
-      i.id === id
-        ? {
-            ...i,
-            unit: editValues.unit,
-            range: {
-              min: editValues.rangeMin !== "" ? parseFloat(editValues.rangeMin) : null,
-              max: editValues.rangeMax !== "" ? parseFloat(editValues.rangeMax) : null,
-            },
-          }
-        : i
-    );
+    const updated = items.map((i) => {
+      if (i.id !== id) return i;
+      // aliasesの英字略称部分だけ差し替え、日本語エイリアスは保持
+      const isAsciiAbbr = (s: string) =>
+        !/[\u3000-\u9FFF\u30A0-\u30FF\u3040-\u309F]/.test(s) && s !== i.name;
+      const nonAsciiAliases = i.aliases.filter(a => !isAsciiAbbr(a) && a !== i.name);
+      const newAliases = editValues.alias.trim()
+        ? [...nonAsciiAliases, editValues.alias.trim()]
+        : nonAsciiAliases;
+      return {
+        ...i,
+        name: editValues.name.trim() || i.name,
+        aliases: newAliases,
+        unit: editValues.unit,
+        range: {
+          min: editValues.rangeMin !== "" ? parseFloat(editValues.rangeMin) : null,
+          max: editValues.rangeMax !== "" ? parseFloat(editValues.rangeMax) : null,
+        },
+      };
+    });
     setItems(updated);
     saveItems(updated);
     setEditingId(null);
