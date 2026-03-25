@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Reorder } from "framer-motion";
+import { Reorder, useDragControls } from "framer-motion";
 import { ChevronLeft, Save, Trash2, Plus, X, GripVertical, FileDown, FileUp, Pencil } from "lucide-react";
 import { loadSettings, saveSettings, importJSON, loadItems, saveItems, loadRecords, generateId, resetItemOrder, exportJSON } from "@/lib/storage";
 import { exportToCSV, parseCSV, downloadFile } from "@/lib/csvParser";
@@ -24,6 +24,137 @@ const EMPTY_NEW_ITEM = {
   name: "", id: "", unit: "", rangeMin: "", rangeMax: "",
   category: "other" as ItemCategory,
 };
+
+interface SortableItemRowProps {
+  item: ItemMaster;
+  editingId: string | null;
+  editValues: { rangeMin: string; rangeMax: string; unit: string };
+  onStartEdit: (item: ItemMaster) => void;
+  onSaveEdit: (id: string) => void;
+  onToggleVisibility: (id: string) => void;
+  onEditValuesChange: (v: { rangeMin: string; rangeMax: string; unit: string }) => void;
+}
+
+function SortableItemRow({
+  item, editingId, editValues,
+  onStartEdit, onSaveEdit, onToggleVisibility, onEditValuesChange,
+}: SortableItemRowProps) {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item
+      key={item.id}
+      value={item}
+      dragListener={false}
+      dragControls={controls}
+      style={{ listStyle: "none" }}
+      className="bg-white"
+    >
+      {/* 行ヘッダー */}
+      <div className="flex items-center px-3 py-2.5 gap-2">
+        {/* グリップ（ここからのみドラッグ可） */}
+        <div
+          className="text-gray-300 cursor-grab active:cursor-grabbing shrink-0 touch-none"
+          onPointerDown={(e) => controls.start(e)}
+        >
+          <GripVertical size={16} />
+        </div>
+
+        {/* 項目名・略称・基準値・単位 */}
+        <div className="flex-1 min-w-0">
+          {/* 上段: 項目名 + 基準値 */}
+          <div className="flex items-baseline justify-between gap-1">
+            <span className="text-sm font-medium text-gray-800 truncate">{item.name}</span>
+            <span className="text-xs text-gray-500 shrink-0 tabular-nums">
+              {item.range.min !== null || item.range.max !== null
+                ? `${item.range.min ?? ""}〜${item.range.max ?? ""}`
+                : "—"}
+            </span>
+          </div>
+          {/* 下段: 略称(グレー) + 単位 */}
+          <div className="flex items-baseline justify-between gap-1 mt-0.5">
+            {(() => {
+              const isAscii = (s: string) => !/[\u3000-\u9FFF\u30A0-\u30FF\u3040-\u309F]/.test(s) && s !== item.name;
+              const abbr = item.aliases.filter(isAscii).sort((a, b) => a.length - b.length)[0];
+              return <span className="text-[11px] text-gray-400">{abbr ?? ""}</span>;
+            })()}
+            <span className="text-[11px] text-gray-400 shrink-0">{item.unit}</span>
+          </div>
+        </div>
+
+        {/* 編集ボタン */}
+        <button
+          onClick={() => onStartEdit(item)}
+          className={`p-1.5 rounded-lg border shrink-0 transition ${
+            editingId === item.id
+              ? "bg-red-50 border-red-300 text-red-500"
+              : "bg-gray-50 border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-500"
+          }`}
+        >
+          <Pencil size={13} />
+        </button>
+
+        {/* 表示トグル */}
+        <button
+          onClick={() => onToggleVisibility(item.id)}
+          className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
+            item.visible ? "bg-red-500" : "bg-gray-200"
+          }`}
+        >
+          <div
+            className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+              item.visible ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* 編集フォーム（展開） */}
+      {editingId === item.id && (
+        <div className="px-4 pb-3 bg-gray-50 border-t border-gray-100 space-y-2">
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            <div>
+              <label className="text-[11px] text-gray-500 font-medium">単位</label>
+              <input
+                type="text"
+                value={editValues.unit}
+                onChange={(e) => onEditValuesChange({ ...editValues, unit: e.target.value })}
+                className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-gray-500 font-medium">基準値 下限</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={editValues.rangeMin}
+                onChange={(e) => onEditValuesChange({ ...editValues, rangeMin: sanitizeNum(e.target.value) })}
+                placeholder="—"
+                className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-gray-500 font-medium">基準値 上限</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={editValues.rangeMax}
+                onChange={(e) => onEditValuesChange({ ...editValues, rangeMax: sanitizeNum(e.target.value) })}
+                placeholder="—"
+                className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+              />
+            </div>
+          </div>
+          <button
+            onClick={() => onSaveEdit(item.id)}
+            className="w-full py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium"
+          >
+            保存
+          </button>
+        </div>
+      )}
+    </Reorder.Item>
+  );
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -560,113 +691,16 @@ export default function SettingsPage() {
             className="divide-y divide-gray-50"
           >
             {items.map((item) => (
-              <Reorder.Item
+              <SortableItemRow
                 key={item.id}
-                value={item}
-                style={{ listStyle: "none" }}
-                className="bg-white"
-              >
-                {/* 行ヘッダー */}
-                <div className="flex items-center px-3 py-2.5 gap-2">
-                  {/* グリップ */}
-                  <div className="text-gray-300 cursor-grab active:cursor-grabbing shrink-0 touch-none">
-                    <GripVertical size={16} />
-                  </div>
-
-                  {/* 項目名・略称・基準値・単位 */}
-                  <div className="flex-1 min-w-0">
-                    {/* 上段: 項目名 + 基準値 */}
-                    <div className="flex items-baseline justify-between gap-1">
-                      <span className="text-sm font-medium text-gray-800 truncate">{item.name}</span>
-                      <span className="text-xs text-gray-500 shrink-0 tabular-nums">
-                        {item.range.min !== null || item.range.max !== null
-                          ? `${item.range.min ?? ""}〜${item.range.max ?? ""}`
-                          : "—"}
-                      </span>
-                    </div>
-                    {/* 下段: 略称(グレー) + 単位 */}
-                    <div className="flex items-baseline justify-between gap-1 mt-0.5">
-                      {(() => {
-                        const isAscii = (s: string) => !/[\u3000-\u9FFF\u30A0-\u30FF\u3040-\u309F]/.test(s) && s !== item.name;
-                        const abbr = item.aliases.filter(isAscii).sort((a, b) => a.length - b.length)[0];
-                        return <span className="text-[11px] text-gray-400">{abbr ?? ""}</span>;
-                      })()}
-                      <span className="text-[11px] text-gray-400 shrink-0">{item.unit}</span>
-                    </div>
-                  </div>
-
-                  {/* 編集ボタン */}
-                  <button
-                    onClick={() => startEdit(item)}
-                    className={`p-1.5 rounded-lg border shrink-0 transition ${
-                      editingId === item.id
-                        ? "bg-red-50 border-red-300 text-red-500"
-                        : "bg-gray-50 border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-500"
-                    }`}
-                  >
-                    <Pencil size={13} />
-                  </button>
-
-                  {/* 表示トグル */}
-                  <button
-                    onClick={() => toggleItemVisibility(item.id)}
-                    className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
-                      item.visible ? "bg-red-500" : "bg-gray-200"
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                        item.visible ? "translate-x-5" : "translate-x-0.5"
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* 編集フォーム（展開） */}
-                {editingId === item.id && (
-                  <div className="px-4 pb-3 bg-gray-50 border-t border-gray-100 space-y-2">
-                    <div className="grid grid-cols-3 gap-2 mt-2">
-                      <div>
-                        <label className="text-[11px] text-gray-500 font-medium">単位</label>
-                        <input
-                          type="text"
-                          value={editValues.unit}
-                          onChange={(e) => setEditValues({ ...editValues, unit: e.target.value })}
-                          className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-gray-500 font-medium">基準値 下限</label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={editValues.rangeMin}
-                          onChange={(e) => setEditValues({ ...editValues, rangeMin: sanitizeNum(e.target.value) })}
-                          placeholder="—"
-                          className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-gray-500 font-medium">基準値 上限</label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={editValues.rangeMax}
-                          onChange={(e) => setEditValues({ ...editValues, rangeMax: sanitizeNum(e.target.value) })}
-                          placeholder="—"
-                          className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => saveEdit(item.id)}
-                      className="w-full py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium"
-                    >
-                      保存
-                    </button>
-                  </div>
-                )}
-              </Reorder.Item>
+                item={item}
+                editingId={editingId}
+                editValues={editValues}
+                onStartEdit={startEdit}
+                onSaveEdit={saveEdit}
+                onToggleVisibility={toggleItemVisibility}
+                onEditValuesChange={setEditValues}
+              />
             ))}
           </Reorder.Group>
         </section>
