@@ -15,6 +15,7 @@ export interface ItemMaster {
   range: ItemRange;     // 基準値
   order: number;        // 表示順（D&D で変更可）
   visible: boolean;     // 一覧に表示するか
+  required?: boolean;   // 必須チェック項目
 }
 
 export interface BloodRecord {

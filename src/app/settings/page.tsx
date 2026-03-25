@@ -25,11 +25,12 @@ interface SortableItemRowProps {
   onToggleVisibility: (id: string) => void;
   onEditValuesChange: (v: { name: string; alias: string; rangeMin: string; rangeMax: string; unit: string }) => void;
   onToggleSelect: (id: string) => void;
+  onToggleRequired: (id: string) => void;
 }
 
 function SortableItemRow({
   item, editingId, editValues, reorderMode, deleteMode, isSelected,
-  onStartEdit, onSaveEdit, onToggleVisibility, onEditValuesChange, onToggleSelect,
+  onStartEdit, onSaveEdit, onToggleVisibility, onEditValuesChange, onToggleSelect, onToggleRequired,
 }: SortableItemRowProps) {
   const controls = useDragControls();
   return (
@@ -66,7 +67,19 @@ function SortableItemRow({
         <div className="flex-1 min-w-0">
           {/* 上段: 項目名 + 基準値 */}
           <div className="flex items-baseline justify-between gap-1">
-            <span className="text-sm font-medium text-gray-800 truncate">{item.name}</span>
+            <div className="flex items-center gap-1 min-w-0">
+              {/* 必須★アイコン: 編集中は常に表示、非編集時は required のみ表示 */}
+              {(editingId === item.id || item.required) && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleRequired(item.id); }}
+                  className={`shrink-0 text-base leading-none ${item.required ? "text-yellow-400" : "text-gray-300"}`}
+                  title="必須チェック項目"
+                >
+                  {item.required ? "★" : "☆"}
+                </button>
+              )}
+              <span className="text-sm font-medium text-gray-800 truncate">{item.name}</span>
+            </div>
             <span className="text-xs text-gray-500 shrink-0 tabular-nums">
               {item.range.min !== null || item.range.max !== null
                 ? `${item.range.min ?? ""}〜${item.range.max ?? ""}`
@@ -370,6 +383,12 @@ export default function SettingsPage() {
 
   const toggleItemVisibility = (id: string) => {
     const updated = items.map((i) => (i.id === id ? { ...i, visible: !i.visible } : i));
+    setItems(updated);
+    saveItems(updated);
+  };
+
+  const toggleItemRequired = (id: string) => {
+    const updated = items.map((i) => (i.id === id ? { ...i, required: !i.required } : i));
     setItems(updated);
     saveItems(updated);
   };
@@ -873,6 +892,7 @@ export default function SettingsPage() {
                 onToggleVisibility={toggleItemVisibility}
                 onEditValuesChange={setEditValues}
                 onToggleSelect={handleToggleDeleteSelect}
+                onToggleRequired={toggleItemRequired}
               />
             ))}
           </Reorder.Group>
