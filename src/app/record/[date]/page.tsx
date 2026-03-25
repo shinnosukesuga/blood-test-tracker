@@ -197,6 +197,20 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             <p className="text-red-200 text-[11px]">検査結果</p>
             <h1 className="text-base font-bold leading-tight truncate">{record ? fmtDay(record.date) : date}</h1>
           </div>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="p-3 rounded-full bg-red-500 active:bg-red-700 transition shrink-0"
+            title="削除"
+          >
+            <Trash2 size={18} />
+          </button>
+          <button
+            onClick={openEdit}
+            className="p-3 rounded-full bg-red-500 active:bg-red-700 transition shrink-0"
+            title="編集"
+          >
+            <Pencil size={18} />
+          </button>
           {/* 前回・翌回ナビ */}
           <div className="flex items-center gap-1 shrink-0">
             <button
@@ -222,20 +236,6 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
               <ChevronRight size={18} />
             </button>
           </div>
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="p-2 rounded-full bg-red-500 hover:bg-red-400 transition shrink-0"
-            title="削除"
-          >
-            <Trash2 size={16} />
-          </button>
-          <button
-            onClick={openEdit}
-            className="p-2 rounded-full bg-red-500 hover:bg-red-400 transition shrink-0"
-            title="編集"
-          >
-            <Pencil size={16} />
-          </button>
         </div>
       </header>
 

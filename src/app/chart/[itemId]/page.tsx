@@ -204,7 +204,7 @@ export default function ChartPage() {
       <header className="bg-red-600 text-white px-4 pt-4 pb-3 sticky top-0 z-10 shadow-md">
         <div className="flex items-center gap-2">
           <button onClick={() => router.back()} className="p-3 -ml-2 shrink-0">
-            <ChevronLeft size={24} />
+            <ChevronLeft size={20} />
           </button>
           <div className="flex-1 min-w-0 text-center">
             <h1 className="text-base font-bold truncate">{item.name}</h1>

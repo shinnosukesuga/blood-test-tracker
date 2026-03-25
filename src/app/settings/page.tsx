@@ -478,7 +478,7 @@ export default function SettingsPage() {
       <header className="bg-red-600 text-white px-4 pt-4 pb-3 sticky top-0 z-10 shadow-md">
         <div className="flex items-center gap-3">
           <button onClick={handleBack} className="p-3 -ml-2">
-            <ChevronLeft size={24} />
+            <ChevronLeft size={20} />
           </button>
           <h1 className="text-lg font-bold">設定</h1>
         </div>

@@ -143,8 +143,8 @@ export default function ScanPage() {
       {/* ヘッダー */}
       <header className="bg-red-600 text-white px-4 pt-4 pb-3 sticky top-0 z-20 shadow-md">
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1">
-            <ChevronLeft size={24} />
+          <button onClick={() => router.back()} className="p-3 -ml-2">
+            <ChevronLeft size={20} />
           </button>
           <div>
             <h1 className="text-lg font-bold">AIスキャン</h1>
