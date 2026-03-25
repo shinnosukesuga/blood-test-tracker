@@ -47,7 +47,8 @@ function ItemRow({ item, value }: { item: ItemMaster; value: number | undefined 
       className={`flex items-center px-4 py-2.5 border-b border-gray-100 active:opacity-70 transition-opacity ${bgCls}`}
     >
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-1.5 min-w-0">
+        <div className="flex items-baseline gap-1 min-w-0">
+          {item.required && <span className="shrink-0 text-sm leading-none text-yellow-400">★</span>}
           <span className={`text-sm font-medium truncate ${textCls}`}>{item.name}</span>
           {abbr && <span className="text-xs text-gray-400 shrink-0">{abbr}</span>}
         </div>
