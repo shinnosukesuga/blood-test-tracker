@@ -207,7 +207,9 @@ export default function ChartPage() {
             <h1 className="text-base font-bold truncate">{item.name}</h1>
             <p className="text-red-200 text-xs truncate">
               {(() => {
-                const aliases = item.aliases.slice(1).filter(a => a !== item.name && a.trim() !== "");
+                const isAsciiAbbr = (s: string) =>
+                  !/[\u3000-\u9FFF\u30A0-\u30FF\u3040-\u309F]/.test(s) && s !== item.name;
+                const aliases = item.aliases.filter(isAsciiAbbr);
                 return aliases.length > 0
                   ? `${aliases.join(" / ")}${item.unit ? ` · ${item.unit}` : ""}`
                   : (item.unit ?? "");
