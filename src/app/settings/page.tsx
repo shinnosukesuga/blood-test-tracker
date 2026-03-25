@@ -165,6 +165,7 @@ export default function SettingsPage() {
   const [items, setItems] = useState<ItemMaster[]>([]);
   const [origOrder, setOrigOrder] = useState<string[]>([]);
   const [showBackConfirm, setShowBackConfirm] = useState(false);
+  const [showReorderConfirm, setShowReorderConfirm] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -298,7 +299,30 @@ export default function SettingsPage() {
   const handleReorder = (reordered: ItemMaster[]) => {
     const updated = reordered.map((item, idx) => ({ ...item, order: idx }));
     setItems(updated);
-    saveItems(updated);
+    // 保存は並び替えモードOFF時に確認してから行う
+  };
+
+  const handleReorderModeToggle = () => {
+    if (reorderMode && isOrderChanged()) {
+      setShowReorderConfirm(true);
+    } else {
+      setReorderMode(false);
+    }
+  };
+
+  const handleReorderSave = () => {
+    saveItems(items);
+    setOrigOrder(items.map(i => i.id));
+    setShowReorderConfirm(false);
+    setReorderMode(false);
+  };
+
+  const handleReorderRevert = () => {
+    const restored = [...items].sort((a, b) => origOrder.indexOf(a.id) - origOrder.indexOf(b.id))
+      .map((item, idx) => ({ ...item, order: idx }));
+    setItems(restored);
+    setShowReorderConfirm(false);
+    setReorderMode(false);
   };
 
   const toggleItemVisibility = (id: string) => {
@@ -377,6 +401,27 @@ export default function SettingsPage() {
           <h1 className="text-lg font-bold">設定</h1>
         </div>
       </header>
+
+      {/* 並び替えモードOFF時の保存確認バー */}
+      {showReorderConfirm && (
+        <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3 sticky top-[56px] z-10">
+          <p className="text-sm font-medium text-yellow-800 mb-2">並び順を保存しますか？</p>
+          <div className="flex gap-2">
+            <button
+              onClick={handleReorderSave}
+              className="flex-1 py-2 bg-yellow-600 text-white rounded-xl text-xs font-bold"
+            >
+              保存する
+            </button>
+            <button
+              onClick={handleReorderRevert}
+              className="flex-1 py-2 bg-white border border-yellow-300 text-yellow-700 rounded-xl text-xs font-medium"
+            >
+              元に戻す
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 並び順変更確認バー */}
       {showBackConfirm && (
@@ -595,7 +640,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setReorderMode((v) => !v)}
+                onClick={() => reorderMode ? handleReorderModeToggle() : setReorderMode(true)}
                 className={`flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition ${
                   reorderMode
                     ? "bg-red-600 text-white"

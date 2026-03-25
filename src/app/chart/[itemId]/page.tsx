@@ -206,7 +206,12 @@ export default function ChartPage() {
           <div className="flex-1 min-w-0 text-center">
             <h1 className="text-base font-bold truncate">{item.name}</h1>
             <p className="text-red-200 text-xs truncate">
-              {item.aliases.slice(1).join(" / ")}{item.unit ? ` · ${item.unit}` : ""}
+              {(() => {
+                const aliases = item.aliases.slice(1).filter(a => a !== item.name && a.trim() !== "");
+                return aliases.length > 0
+                  ? `${aliases.join(" / ")}${item.unit ? ` · ${item.unit}` : ""}`
+                  : (item.unit ?? "");
+              })()}
             </p>
           </div>
           {/* 項目間ナビ */}
