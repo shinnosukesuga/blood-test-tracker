@@ -18,16 +18,18 @@ interface SortableItemRowProps {
   editingId: string | null;
   editValues: { name: string; alias: string; rangeMin: string; rangeMax: string; unit: string };
   reorderMode: boolean;
+  deleteMode: boolean;
+  isSelected: boolean;
   onStartEdit: (item: ItemMaster) => void;
   onSaveEdit: (id: string) => void;
   onToggleVisibility: (id: string) => void;
   onEditValuesChange: (v: { name: string; alias: string; rangeMin: string; rangeMax: string; unit: string }) => void;
-  onDeleteRequest: (id: string) => void;
+  onToggleSelect: (id: string) => void;
 }
 
 function SortableItemRow({
-  item, editingId, editValues, reorderMode,
-  onStartEdit, onSaveEdit, onToggleVisibility, onEditValuesChange, onDeleteRequest,
+  item, editingId, editValues, reorderMode, deleteMode, isSelected,
+  onStartEdit, onSaveEdit, onToggleVisibility, onEditValuesChange, onToggleSelect,
 }: SortableItemRowProps) {
   const controls = useDragControls();
   return (
@@ -39,17 +41,26 @@ function SortableItemRow({
       layout="position"
       transition={{ duration: 0 }}
       style={{ listStyle: "none" }}
-      className="bg-white"
+      className={`${isSelected ? "bg-red-50" : "bg-white"} transition-colors`}
     >
       {/* 行ヘッダー */}
-      <div className="flex items-center px-3 py-2.5 gap-2">
-        {/* グリップ（並び替えモード時のみ有効） */}
-        <div
-          className={`shrink-0 touch-none px-1 py-2 ${reorderMode ? "text-gray-400 cursor-grab active:cursor-grabbing" : "text-gray-200 cursor-default"}`}
-          onPointerDown={reorderMode ? (e) => { e.preventDefault(); controls.start(e); } : undefined}
-        >
-          <GripVertical size={16} />
-        </div>
+      <div
+        className="flex items-center px-3 py-2.5 gap-2"
+        onClick={deleteMode ? () => onToggleSelect(item.id) : undefined}
+      >
+        {/* 削除モード時チェックボックス / 通常時グリップ */}
+        {deleteMode ? (
+          <div className={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center ${isSelected ? "bg-red-500 border-red-500" : "border-gray-300"}`}>
+            {isSelected && <span className="text-white text-[10px] font-bold">✓</span>}
+          </div>
+        ) : (
+          <div
+            className={`shrink-0 touch-none px-1 py-2 ${reorderMode ? "text-gray-400 cursor-grab active:cursor-grabbing" : "text-gray-200 cursor-default"}`}
+            onPointerDown={reorderMode ? (e) => { e.preventDefault(); controls.start(e); } : undefined}
+          >
+            <GripVertical size={16} />
+          </div>
+        )}
 
         {/* 項目名・略称・基準値・単位 */}
         <div className="flex-1 min-w-0">
@@ -73,39 +84,33 @@ function SortableItemRow({
           </div>
         </div>
 
-        {/* 削除ボタン */}
-        <button
-          onClick={() => onDeleteRequest(item.id)}
-          className="p-1.5 rounded-lg border shrink-0 transition bg-gray-50 border-gray-200 text-gray-300 hover:border-red-300 hover:text-red-400"
-        >
-          <Trash2 size={13} />
-        </button>
-
-        {/* 編集ボタン */}
-        <button
-          onClick={() => onStartEdit(item)}
-          className={`p-1.5 rounded-lg border shrink-0 transition ${
-            editingId === item.id
-              ? "bg-red-50 border-red-300 text-red-500"
-              : "bg-gray-50 border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-500"
-          }`}
-        >
-          <Pencil size={13} />
-        </button>
-
-        {/* 表示トグル */}
-        <button
-          onClick={() => onToggleVisibility(item.id)}
-          className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
-            item.visible ? "bg-red-500" : "bg-gray-200"
-          }`}
-        >
-          <div
-            className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-              item.visible ? "translate-x-5" : "translate-x-0.5"
-            }`}
-          />
-        </button>
+        {/* 編集ボタン・表示トグル（削除モード時は非表示） */}
+        {!deleteMode && (
+          <>
+            <button
+              onClick={() => onStartEdit(item)}
+              className={`p-1.5 rounded-lg border shrink-0 transition ${
+                editingId === item.id
+                  ? "bg-red-50 border-red-300 text-red-500"
+                  : "bg-gray-50 border-gray-200 text-gray-400 hover:border-red-300 hover:text-red-500"
+              }`}
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              onClick={() => onToggleVisibility(item.id)}
+              className={`relative w-10 h-5 rounded-full transition-colors shrink-0 ${
+                item.visible ? "bg-red-500" : "bg-gray-200"
+              }`}
+            >
+              <div
+                className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                  item.visible ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </>
+        )}
       </div>
 
       {/* 編集フォーム（展開） */}
@@ -195,8 +200,9 @@ export default function SettingsPage() {
     name: "", alias: "", rangeMin: "", rangeMax: "", unit: "",
   });
   const [reorderMode, setReorderMode] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedDeleteIds, setSelectedDeleteIds] = useState<Set<string>>(new Set());
   const [itemsMsg, setItemsMsg] = useState("");
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const userDraggedRef = useRef(false);
   const [showDataHelp, setShowDataHelp] = useState(false);
   const dataHelpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -440,14 +446,28 @@ export default function SettingsPage() {
     setItemsMsg(`「${item.name}」を追加しました`);
   };
 
-  const handleDeleteItem = (id: string) => {
-    const updated = items.filter(i => i.id !== id).map((item, idx) => ({ ...item, order: idx }));
+  const handleToggleDeleteSelect = (id: string) => {
+    setSelectedDeleteIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleDeleteExecute = () => {
+    const ids = selectedDeleteIds;
+    const updated = items.filter(i => !ids.has(i.id)).map((item, idx) => ({ ...item, order: idx }));
     saveItems(updated);
     setItems(updated);
     setOrigOrder(updated.map(i => i.id));
-    setDeleteConfirmId(null);
-    const name = items.find(i => i.id === id)?.name ?? id;
-    setItemsMsg(`「${name}」を削除しました`);
+    setSelectedDeleteIds(new Set());
+    setDeleteMode(false);
+    setItemsMsg(`${ids.size}件を削除しました`);
+  };
+
+  const handleDeleteCancel = () => {
+    setSelectedDeleteIds(new Set());
+    setDeleteMode(false);
   };
 
   return (
@@ -462,20 +482,20 @@ export default function SettingsPage() {
       </header>
 
       {/* 削除確認バー */}
-      {deleteConfirmId && (
+      {deleteMode && selectedDeleteIds.size > 0 && (
         <div className="bg-red-50 border-b border-red-200 px-4 py-3 sticky top-[56px] z-10">
           <p className="text-sm font-medium text-red-800 mb-2">
-            「{items.find(i => i.id === deleteConfirmId)?.name}」を削除しますか？
+            {selectedDeleteIds.size}件を削除しますか？（この操作は元に戻せません）
           </p>
           <div className="flex gap-2">
             <button
-              onClick={() => handleDeleteItem(deleteConfirmId)}
+              onClick={handleDeleteExecute}
               className="flex-1 py-2 bg-red-600 text-white rounded-xl text-xs font-bold"
             >
               削除する
             </button>
             <button
-              onClick={() => setDeleteConfirmId(null)}
+              onClick={handleDeleteCancel}
               className="flex-1 py-2 bg-white border border-red-300 text-red-700 rounded-xl text-xs font-medium"
             >
               キャンセル
@@ -715,31 +735,40 @@ export default function SettingsPage() {
 
         {/* 項目管理 */}
         <section className="bg-white mx-4 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-gray-600">検査項目の管理</h2>
-              <p className="text-[11px] text-gray-400 mt-0.5">基準値編集・表示ON/OFF</p>
-            </div>
-            <div className="flex items-center gap-2">
+          <div className="px-4 pt-3 pb-2 border-b border-gray-100 bg-gray-50">
+            <h2 className="text-sm font-semibold text-gray-600 mb-2">検査項目の管理</h2>
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={() => reorderMode ? handleReorderModeToggle() : setReorderMode(true)}
-                className={`flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition ${
-                  reorderMode
-                    ? "bg-red-600 text-white"
-                    : "bg-gray-100 text-gray-500"
+                disabled={deleteMode}
+                className={`flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition disabled:opacity-40 ${
+                  reorderMode ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"
                 }`}
               >
                 <GripVertical size={12} />
                 並び替え
               </button>
+              <button
+                onClick={() => deleteMode ? handleDeleteCancel() : setDeleteMode(true)}
+                disabled={reorderMode}
+                className={`flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition disabled:opacity-40 ${
+                  deleteMode ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                <Trash2 size={12} />
+                削除
+              </button>
+              <button
+                onClick={() => setShowAddForm((v) => !v)}
+                disabled={reorderMode || deleteMode}
+                className={`flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition disabled:opacity-40 ${
+                  showAddForm ? "bg-red-50 text-red-600" : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                {showAddForm ? <X size={13} /> : <Plus size={13} />}
+                {showAddForm ? "閉じる" : "項目を追加"}
+              </button>
             </div>
-            <button
-              onClick={() => setShowAddForm((v) => !v)}
-              className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-3 py-1.5 rounded-full"
-            >
-              {showAddForm ? <X size={13} /> : <Plus size={13} />}
-              {showAddForm ? "閉じる" : "項目を追加"}
-            </button>
           </div>
 
           {/* 項目管理メッセージ */}
@@ -834,11 +863,13 @@ export default function SettingsPage() {
                 editingId={editingId}
                 editValues={editValues}
                 reorderMode={reorderMode}
+                deleteMode={deleteMode}
+                isSelected={selectedDeleteIds.has(item.id)}
                 onStartEdit={startEdit}
                 onSaveEdit={saveEdit}
                 onToggleVisibility={toggleItemVisibility}
                 onEditValuesChange={setEditValues}
-                onDeleteRequest={setDeleteConfirmId}
+                onToggleSelect={handleToggleDeleteSelect}
               />
             ))}
           </Reorder.Group>
