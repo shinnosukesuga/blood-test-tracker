@@ -125,13 +125,22 @@ function SortableItemRow({
           <div className="grid grid-cols-2 gap-2 mt-2">
             <div>
               <label className="text-[11px] text-gray-500 font-medium">名称</label>
-              <input
-                type="text"
-                value={editValues.name}
-                onChange={(e) => onEditValuesChange({ ...editValues, name: e.target.value })}
-                maxLength={100}
-                className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-              />
+              <div className="flex items-center gap-1 mt-0.5">
+                <button
+                  onClick={() => onEditValuesChange({ ...editValues, required: !editValues.required })}
+                  className={`shrink-0 text-lg leading-none px-1 py-1 ${editValues.required ? "text-yellow-400" : "text-gray-300"}`}
+                  title="必須チェック項目"
+                >
+                  {editValues.required ? "★" : "☆"}
+                </button>
+                <input
+                  type="text"
+                  value={editValues.name}
+                  onChange={(e) => onEditValuesChange({ ...editValues, name: e.target.value })}
+                  maxLength={100}
+                  className="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+                />
+              </div>
             </div>
             <div>
               <label className="text-[11px] text-gray-500 font-medium">英字略称</label>
@@ -178,18 +187,6 @@ function SortableItemRow({
               />
             </div>
           </div>
-          {/* 必須チェックトグル */}
-          <button
-            onClick={() => onEditValuesChange({ ...editValues, required: !editValues.required })}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition ${
-              editValues.required
-                ? "bg-yellow-50 border-yellow-300 text-yellow-700"
-                : "bg-white border-gray-200 text-gray-400"
-            }`}
-          >
-            <span className="text-base leading-none">{editValues.required ? "★" : "☆"}</span>
-            必須チェック項目
-          </button>
           <button
             onClick={() => onSaveEdit(item.id)}
             className="w-full py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium"
