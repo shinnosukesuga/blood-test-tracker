@@ -42,7 +42,10 @@ function ItemRow({ item, value }: { item: ItemMaster; value: number | undefined 
   const abbr = getCsvAbbr(item);
 
   return (
-    <div className={`flex items-center px-4 py-2.5 border-b border-gray-100 ${bgCls}`}>
+    <Link
+      href={`/chart/${item.id}`}
+      className={`flex items-center px-4 py-2.5 border-b border-gray-100 active:opacity-70 transition-opacity ${bgCls}`}
+    >
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5">
           <span className={`text-sm font-medium ${textCls}`}>{item.name}</span>
@@ -64,14 +67,8 @@ function ItemRow({ item, value }: { item: ItemMaster; value: number | undefined 
         </div>
       </div>
 
-      <Link
-        href={`/chart/${item.id}`}
-        className="ml-2 text-gray-300 hover:text-red-500 transition shrink-0"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <ChevronRight size={16} />
-      </Link>
-    </div>
+      <ChevronRight size={16} className="ml-2 text-gray-300 shrink-0" />
+    </Link>
   );
 }
 

@@ -219,7 +219,7 @@ export default function ChartPage() {
             <button
               onClick={() => prevItem && router.replace(`/chart/${prevItem.id}`)}
               disabled={!prevItem}
-              className="p-1.5 rounded-full bg-red-500 disabled:opacity-30"
+              className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
               title={prevItem?.name}
             >
               <ChevronLeft size={18} />
@@ -227,7 +227,7 @@ export default function ChartPage() {
             <button
               onClick={() => nextItem && router.replace(`/chart/${nextItem.id}`)}
               disabled={!nextItem}
-              className="p-1.5 rounded-full bg-red-500 disabled:opacity-30"
+              className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
               title={nextItem?.name}
             >
               <ChevronRight size={18} />
