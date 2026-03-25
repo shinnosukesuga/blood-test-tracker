@@ -173,11 +173,12 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
     return result;
   }, [sortedItems, showAbnOnly, showRequiredOnly, record]);
 
-  const itemCount   = record ? Object.keys(record.values).length : 0;
-  const abnCount    = sortedItems.filter(item => {
+  const itemCount      = record ? Object.keys(record.values).length : 0;
+  const abnCount       = sortedItems.filter(item => {
     const val = record?.values[item.id];
     return val !== undefined && isAbnormal(item, val);
   }).length;
+  const requiredCount  = sortedItems.filter(item => item.required).length;
 
   const allSortedItems = [...items].sort((a, b) => a.order - b.order);
 
@@ -286,7 +287,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
         {record && (
           <div className="bg-white border-b border-gray-100 px-4 py-2 flex items-center justify-between">
             <span className="text-xs text-gray-600">
-              検索項目数: <b>{itemCount}</b>項目　閾値外: <b className={abnCount > 0 ? "text-red-600" : ""}>{abnCount}</b>項目
+              検索項目数: <b>{itemCount}</b>項目　閾値外: <b className={abnCount > 0 ? "text-red-600" : ""}>{abnCount}</b>項目　☆: <b className="text-yellow-500">{requiredCount}</b>項目
             </span>
             {/* フィルターボタン */}
             <div className="flex items-center gap-1.5">
@@ -296,7 +297,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                   showAbnOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}
               >
-                閾値
+                閾値外
               </button>
               <button
                 onClick={() => setShowRequiredOnly(v => !v)}
