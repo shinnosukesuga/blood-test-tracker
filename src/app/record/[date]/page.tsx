@@ -4,7 +4,7 @@ import { use, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Settings, TrendingUp, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings, TrendingUp, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send, Star, AlertCircle } from "lucide-react";
 import { loadRecords, loadItems, saveRecord, deleteRecord, loadSettings, loadAIConversation, saveAIMessage } from "@/lib/storage";
 import { isAbnormal } from "@/lib/itemMaster";
 import { BloodRecord, ItemMaster, AIMessage } from "@/lib/types";
@@ -297,22 +297,24 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
               検索項目数: <b>{itemCount}</b>項目　閾値外: <b className={abnCount > 0 ? "text-red-600" : ""}>{abnCount}</b>項目　<span className="text-yellow-400">★</span>: <b>{requiredCount}</b>項目
             </span>
             {/* フィルターボタン */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap justify-end">
               <button
                 onClick={() => setShowAbnOnly(v => !v)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition ${
                   showAbnOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}
               >
+                <AlertCircle size={11} />
                 閾値外
               </button>
               <button
                 onClick={() => setShowRequiredOnly(v => !v)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition ${
                   showRequiredOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}
               >
-                ☆
+                <Star size={11} className={showRequiredOnly ? "fill-yellow-400 text-yellow-400" : ""} />
+                必須
               </button>
             </div>
           </div>
