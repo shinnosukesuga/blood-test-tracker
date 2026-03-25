@@ -47,6 +47,8 @@ function SortableItemRow({
       value={item}
       dragListener={false}
       dragControls={controls}
+      layout="position"
+      transition={{ duration: 0 }}
       style={{ listStyle: "none" }}
       className="bg-white"
     >
