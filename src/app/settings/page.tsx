@@ -16,21 +16,20 @@ const EMPTY_NEW_ITEM = {
 interface SortableItemRowProps {
   item: ItemMaster;
   editingId: string | null;
-  editValues: { name: string; alias: string; rangeMin: string; rangeMax: string; unit: string };
+  editValues: { name: string; alias: string; rangeMin: string; rangeMax: string; unit: string; required: boolean };
   reorderMode: boolean;
   deleteMode: boolean;
   isSelected: boolean;
   onStartEdit: (item: ItemMaster) => void;
   onSaveEdit: (id: string) => void;
   onToggleVisibility: (id: string) => void;
-  onEditValuesChange: (v: { name: string; alias: string; rangeMin: string; rangeMax: string; unit: string }) => void;
+  onEditValuesChange: (v: { name: string; alias: string; rangeMin: string; rangeMax: string; unit: string; required: boolean }) => void;
   onToggleSelect: (id: string) => void;
-  onToggleRequired: (id: string) => void;
 }
 
 function SortableItemRow({
   item, editingId, editValues, reorderMode, deleteMode, isSelected,
-  onStartEdit, onSaveEdit, onToggleVisibility, onEditValuesChange, onToggleSelect, onToggleRequired,
+  onStartEdit, onSaveEdit, onToggleVisibility, onEditValuesChange, onToggleSelect,
 }: SortableItemRowProps) {
   const controls = useDragControls();
   return (
@@ -68,15 +67,9 @@ function SortableItemRow({
           {/* 上段: 項目名 + 基準値 */}
           <div className="flex items-baseline justify-between gap-1">
             <div className="flex items-center gap-1 min-w-0">
-              {/* 必須★アイコン: 編集中は常に表示、非編集時は required のみ表示 */}
-              {(editingId === item.id || item.required) && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onToggleRequired(item.id); }}
-                  className={`shrink-0 text-base leading-none ${item.required ? "text-yellow-400" : "text-gray-300"}`}
-                  title="必須チェック項目"
-                >
-                  {item.required ? "★" : "☆"}
-                </button>
+              {/* 必須★アイコン: required な項目のみ読み取り専用で表示 */}
+              {item.required && (
+                <span className="shrink-0 text-base leading-none text-yellow-400">★</span>
               )}
               <span className="text-sm font-medium text-gray-800 truncate">{item.name}</span>
             </div>
@@ -185,6 +178,18 @@ function SortableItemRow({
               />
             </div>
           </div>
+          {/* 必須チェックトグル */}
+          <button
+            onClick={() => onEditValuesChange({ ...editValues, required: !editValues.required })}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition ${
+              editValues.required
+                ? "bg-yellow-50 border-yellow-300 text-yellow-700"
+                : "bg-white border-gray-200 text-gray-400"
+            }`}
+          >
+            <span className="text-base leading-none">{editValues.required ? "★" : "☆"}</span>
+            必須チェック項目
+          </button>
           <button
             onClick={() => onSaveEdit(item.id)}
             className="w-full py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium"
@@ -209,8 +214,8 @@ export default function SettingsPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ name: string; alias: string; rangeMin: string; rangeMax: string; unit: string }>({
-    name: "", alias: "", rangeMin: "", rangeMax: "", unit: "",
+  const [editValues, setEditValues] = useState<{ name: string; alias: string; rangeMin: string; rangeMax: string; unit: string; required: boolean }>({
+    name: "", alias: "", rangeMin: "", rangeMax: "", unit: "", required: false,
   });
   const [reorderMode, setReorderMode] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
@@ -387,12 +392,6 @@ export default function SettingsPage() {
     saveItems(updated);
   };
 
-  const toggleItemRequired = (id: string) => {
-    const updated = items.map((i) => (i.id === id ? { ...i, required: !i.required } : i));
-    setItems(updated);
-    saveItems(updated);
-  };
-
   const startEdit = (item: ItemMaster) => {
     if (editingId === item.id) {
       setEditingId(null);
@@ -408,6 +407,7 @@ export default function SettingsPage() {
       rangeMin: item.range.min !== null ? String(item.range.min) : "",
       rangeMax: item.range.max !== null ? String(item.range.max) : "",
       unit: item.unit,
+      required: item.required ?? false,
     });
   };
 
@@ -430,6 +430,7 @@ export default function SettingsPage() {
           min: editValues.rangeMin !== "" ? parseFloat(editValues.rangeMin) : null,
           max: editValues.rangeMax !== "" ? parseFloat(editValues.rangeMax) : null,
         },
+        required: editValues.required,
       };
     });
     setItems(updated);
@@ -892,7 +893,6 @@ export default function SettingsPage() {
                 onToggleVisibility={toggleItemVisibility}
                 onEditValuesChange={setEditValues}
                 onToggleSelect={handleToggleDeleteSelect}
-                onToggleRequired={toggleItemRequired}
               />
             ))}
           </Reorder.Group>

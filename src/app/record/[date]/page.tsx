@@ -301,10 +301,10 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
               <button
                 onClick={() => setShowRequiredOnly(v => !v)}
                 className={`px-2.5 py-1 rounded-full text-xs font-medium border transition ${
-                  showRequiredOnly ? "bg-yellow-50 text-yellow-700 border-yellow-300" : "bg-gray-50 text-gray-500 border-gray-200"
+                  showRequiredOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}
               >
-                必須
+                ☆
               </button>
             </div>
           </div>
