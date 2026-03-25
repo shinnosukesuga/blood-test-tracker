@@ -15,12 +15,66 @@ import { DEFAULT_ITEMS, EXCLUDED_ITEM_NAMES } from "./itemMaster";
 // Generic helpers
 // ============================================================
 
+function isValidArray(v: unknown): v is unknown[] {
+  return Array.isArray(v);
+}
+
+function isValidObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function validateBloodRecord(r: unknown): r is BloodRecord {
+  if (!isValidObject(r)) return false;
+  return (
+    typeof r.id === "string" &&
+    typeof r.date === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(r.date) &&
+    isValidObject(r.values) &&
+    typeof r.createdAt === "string"
+  );
+}
+
+function validateItemMaster(i: unknown): i is ItemMaster {
+  if (!isValidObject(i)) return false;
+  return (
+    typeof i.id === "string" && i.id.length > 0 && i.id.length <= 50 &&
+    typeof i.name === "string" && i.name.length > 0 && i.name.length <= 100 &&
+    Array.isArray(i.aliases) &&
+    typeof i.unit === "string" &&
+    isValidObject(i.range) &&
+    typeof i.visible === "boolean"
+  );
+}
+
+function validateHealthEvent(e: unknown): e is HealthEvent {
+  if (!isValidObject(e)) return false;
+  return (
+    typeof e.id === "string" &&
+    typeof e.date === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(e.date) &&
+    typeof e.label === "string" && e.label.length <= 256
+  );
+}
+
 function load<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
-    return JSON.parse(raw) as T;
+    const parsed: unknown = JSON.parse(raw);
+
+    // 配列データのバリデーション
+    if (key === STORAGE_KEYS.RECORDS && isValidArray(parsed)) {
+      return parsed.filter(validateBloodRecord) as T;
+    }
+    if (key === STORAGE_KEYS.ITEMS && isValidArray(parsed)) {
+      return parsed.filter(validateItemMaster) as T;
+    }
+    if (key === STORAGE_KEYS.EVENTS && isValidArray(parsed)) {
+      return parsed.filter(validateHealthEvent) as T;
+    }
+
+    return parsed as T;
   } catch {
     return fallback;
   }
@@ -201,7 +255,6 @@ export function deleteEvent(id: string): void {
 // ============================================================
 
 const DEFAULT_SETTINGS: AppSettings = {
-  geminiApiKey: "",
   defaultView: "list",
   changeHighlight: true,
   changeThreshold: 10,
@@ -265,10 +318,18 @@ export function exportJSON(): string {
 
 export function importJSON(jsonStr: string): { success: boolean; message: string } {
   try {
-    const data = JSON.parse(jsonStr);
-    if (data.items) save(STORAGE_KEYS.ITEMS, data.items);
-    if (data.records) save(STORAGE_KEYS.RECORDS, data.records);
-    if (data.events) save(STORAGE_KEYS.EVENTS, data.events);
+    const data: unknown = JSON.parse(jsonStr);
+    if (!isValidObject(data)) return { success: false, message: "不正なJSONフォーマットです" };
+
+    if (Array.isArray(data.items)) {
+      save(STORAGE_KEYS.ITEMS, (data.items as unknown[]).filter(validateItemMaster));
+    }
+    if (Array.isArray(data.records)) {
+      save(STORAGE_KEYS.RECORDS, (data.records as unknown[]).filter(validateBloodRecord));
+    }
+    if (Array.isArray(data.events)) {
+      save(STORAGE_KEYS.EVENTS, (data.events as unknown[]).filter(validateHealthEvent));
+    }
     return { success: true, message: "インポート完了" };
   } catch (e) {
     return { success: false, message: `インポートエラー: ${e}` };

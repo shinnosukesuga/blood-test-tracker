@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useRef, useState, useCallback } from "react";
+import { use, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,7 +8,8 @@ import { ChevronLeft, Settings, TrendingUp, Pencil, Check, X, Trash2, AlertTrian
 import { loadRecords, loadItems, saveRecord, deleteRecord, loadSettings, loadAIConversation, saveAIMessage } from "@/lib/storage";
 import { isAbnormal } from "@/lib/itemMaster";
 import { BloodRecord, ItemMaster, AIMessage } from "@/lib/types";
-import { analyzeWithContext, resolveApiKey } from "@/lib/gemini";
+import { analyzeWithContext } from "@/lib/gemini";
+import { sanitizeNum } from "@/lib/utils";
 import DraggableItemList from "@/components/DraggableItemList";
 import DatePicker from "@/components/DatePicker";
 import ReactMarkdown from "react-markdown";
@@ -45,16 +46,6 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const [showDatePicker,  setShowDatePicker]  = useState(false);
   const [confirmDelete,   setConfirmDelete]   = useState(false);
 
-  // 全角→半角変換 ＋ 半角数値・小数点のみ許可
-  const sanitizeNum = (v: string) => {
-    const half = v.replace(/[０-９．]/g, s =>
-      s === "．" ? "." : String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
-    );
-    const c = half.replace(/[^0-9.]/g, "");
-    const parts = c.split(".");
-    return parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : c;
-  };
-
   useEffect(() => {
     const allItems = loadItems();
     setItems(allItems);
@@ -75,11 +66,6 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const handleAiAnalyze = async (userMsg: string | null = null) => {
     if (!record) return;
     const settings = loadSettings();
-    const apiKey = resolveApiKey(settings.geminiApiKey);
-    if (!apiKey) {
-      setAiError("Gemini APIキーが設定されていません。設定画面で入力してください。");
-      return;
-    }
     setAiError("");
     setAiLoading(true);
 
@@ -99,7 +85,6 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
         .slice(0, settings.aiRecentRecords ?? 3);
 
       const aiText = await analyzeWithContext(
-        apiKey,
         record,
         recentRecords,
         allRecords,
@@ -173,13 +158,19 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
 
   const handleReorder = useCallback(() => {}, []);
 
-  const sortedItems = [...items].filter(i => i.visible).sort((a, b) => a.order - b.order);
-  const filteredItems = showAbnOnly
-    ? sortedItems.filter(item => {
-        const val = record?.values[item.id];
-        return val !== undefined && isAbnormal(item, val);
-      })
-    : sortedItems;
+  const sortedItems = useMemo(
+    () => [...items].filter(i => i.visible).sort((a, b) => a.order - b.order),
+    [items]
+  );
+  const filteredItems = useMemo(
+    () => showAbnOnly
+      ? sortedItems.filter(item => {
+          const val = record?.values[item.id];
+          return val !== undefined && isAbnormal(item, val);
+        })
+      : sortedItems,
+    [sortedItems, showAbnOnly, record]
+  );
 
   const itemCount   = record ? Object.keys(record.values).length : 0;
   const abnCount    = sortedItems.filter(item => {
@@ -327,6 +318,8 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                             <span className="whitespace-pre-wrap">{msg.content}</span>
                           ) : (
                             <ReactMarkdown
+                              allowedElements={["p", "strong", "em", "ul", "ol", "li", "br"]}
+                              unwrapDisallowed
                               components={{
                                 p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
                                 strong: ({ children }) => <strong className="font-semibold">{children}</strong>,

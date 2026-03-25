@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Upload, ChevronLeft, Check, X, Sparkles, AlertTriangle, PenLine } from "lucide-react";
 import { GeminiScanResult, BloodRecord } from "@/lib/types";
-import { loadSettings, loadItems, saveRecord, generateId } from "@/lib/storage";
+import { loadItems, saveRecord, generateId } from "@/lib/storage";
 import DatePicker from "@/components/DatePicker";
-import { scanImageWithGemini, fileToBase64, analyzeRecords, resolveApiKey } from "@/lib/gemini";
+import { scanImageWithGemini, fileToBase64, analyzeRecords } from "@/lib/gemini";
 import { isAbnormal, findItem } from "@/lib/itemMaster";
 import { loadRecords, getPreviousRecord } from "@/lib/storage";
+import { sanitizeNum } from "@/lib/utils";
 
 // 入力フィールド（1項目）
 interface ScanItem {
@@ -43,22 +44,10 @@ export default function ScanPage() {
     setPreviewUrl(url);
     setScanning(true);
 
-    const settings = loadSettings();
-    const apiKey = resolveApiKey(settings.geminiApiKey);
-    if (!apiKey) {
-      setScanError("Gemini APIキーが設定されていません。設定画面で登録してください。");
-      setScanning(false);
-      return;
-    }
-
     try {
       const base64 = await fileToBase64(file);
       const mimeType = file.type || "image/jpeg";
-      const result: GeminiScanResult = await scanImageWithGemini(
-        apiKey,
-        base64,
-        mimeType
-      );
+      const result: GeminiScanResult = await scanImageWithGemini(base64, mimeType);
 
       if (result.date) setScanDate(result.date);
 
@@ -88,16 +77,6 @@ export default function ScanPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) processFile(file);
-  };
-
-  // 全角→半角変換 ＋ 半角数値・小数点のみ許可
-  const sanitizeNum = (v: string) => {
-    const half = v.replace(/[０-９．]/g, s =>
-      s === "．" ? "." : String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
-    );
-    const c = half.replace(/[^0-9.]/g, "");
-    const parts = c.split(".");
-    return parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : c;
   };
 
   const updateValue = (idx: number, value: string) => {
@@ -132,12 +111,10 @@ export default function ScanPage() {
 
     // AI 分析
     try {
-      const settings = loadSettings();
-      const apiKey2 = resolveApiKey(settings.geminiApiKey);
-      if (apiKey2) {
-        const items = loadItems();
-        const prev = getPreviousRecord(scanDate);
-        const analysis = await analyzeRecords(apiKey2, record, prev, items);
+      const items = loadItems();
+      const prev = getPreviousRecord(scanDate);
+      {
+        const analysis = await analyzeRecords(record, prev, items);
         if (analysis.hasSignificantChanges) {
           setAiAnalysis(
             [analysis.summary, ...analysis.insights, ...analysis.recommendations.map((r) => `• ${r}`)].join("\n")

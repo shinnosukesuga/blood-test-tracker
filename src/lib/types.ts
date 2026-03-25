@@ -43,7 +43,6 @@ export interface HealthEvent {
 }
 
 export interface AppSettings {
-  geminiApiKey: string;
   defaultView: "list" | "grid";
   changeHighlight: boolean;   // 前回比の色強調を有効にする
   changeThreshold: number;    // 色強調する変化率の閾値（%）

@@ -489,7 +489,8 @@ export default function ChartPage() {
               <input
                 type="text"
                 value={newEventLabel}
-                onChange={(e) => setNewEventLabel(e.target.value)}
+                onChange={(e) => setNewEventLabel(e.target.value.slice(0, 100))}
+                maxLength={100}
                 placeholder="例: 花粉症開始、忘年会など"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400"
               />

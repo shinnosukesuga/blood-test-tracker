@@ -9,6 +9,7 @@ import { loadRecords, saveRecord, loadItems, generateId, deleteRecord } from "@/
 import { isAbnormal } from "@/lib/itemMaster";
 import { BloodRecord, ItemMaster } from "@/lib/types";
 import DatePicker from "@/components/DatePicker";
+import { sanitizeNum } from "@/lib/utils";
 
 const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -88,11 +89,11 @@ export default function HomePage() {
   };
 
   // 年＋月フィルター
-  const filtered = records.filter(r => {
+  const filtered = useMemo(() => records.filter(r => {
     if (selYear !== "すべて" && !r.date.startsWith(selYear)) return false;
     if (selMonth !== "すべて" && r.date.slice(5, 7) !== selMonth) return false;
     return true;
-  });
+  }), [records, selYear, selMonth]);
 
   const openNew = () => {
     setNewDate(new Date().toISOString().slice(0, 10));
@@ -115,17 +116,7 @@ export default function HomePage() {
     router.push(`/record/${newDate}`);
   };
 
-  const sortedItems = [...items].sort((a, b) => a.order - b.order);
-
-  // 全角→半角変換 ＋ 半角数値・小数点のみ許可
-  const sanitizeNum = (v: string) => {
-    const half = v.replace(/[０-９．]/g, s =>
-      s === "．" ? "." : String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
-    );
-    const c = half.replace(/[^0-9.]/g, "");
-    const parts = c.split(".");
-    return parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : c;
-  };
+  const sortedItems = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-gray-50">

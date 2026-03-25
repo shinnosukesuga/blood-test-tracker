@@ -19,6 +19,15 @@ interface CsvRow {
   rangeMax: string;
 }
 
+const MAX_FIELD_LEN = 100;
+const SAFE_TEXT = /^[\w\s\u3000-\u9FFF\u30A0-\u30FF\u3040-\u309F\u4E00-\u9FFF\-\/().%*+]+$/;
+
+function sanitizeTextField(s: string): string {
+  const trimmed = s.slice(0, MAX_FIELD_LEN).trim();
+  // 危険な文字（スクリプト注入等）を除去
+  return trimmed.replace(/[<>"'`]/g, "");
+}
+
 function parseRow(line: string): CsvRow | null {
   // CSV の各フィールドをダブルクォート対応でパース
   const fields: string[] = [];
@@ -40,16 +49,23 @@ function parseRow(line: string): CsvRow | null {
 
   if (fields.length < 9) return null;
 
+  const name = sanitizeTextField(fields[3]);
+  const alias = sanitizeTextField(fields[4]);
+  const unit = sanitizeTextField(fields[6]);
+
+  // 名前・略称は必須かつ安全な文字のみ許可
+  if (!name || name.length === 0) return null;
+
   return {
-    year: fields[0].trim(),
-    month: fields[1].trim(),
-    day: fields[2].trim(),
-    name: fields[3].trim(),
-    alias: fields[4].trim(),
-    value: fields[5].trim(),
-    unit: fields[6].trim(),
-    rangeMin: fields[7].trim(),
-    rangeMax: fields[8].trim(),
+    year: fields[0].trim().slice(0, 4),
+    month: fields[1].trim().slice(0, 2),
+    day: fields[2].trim().slice(0, 2),
+    name,
+    alias,
+    value: fields[5].trim().slice(0, 20),
+    unit,
+    rangeMin: fields[7].trim().slice(0, 20),
+    rangeMax: fields[8].trim().slice(0, 20),
   };
 }
 

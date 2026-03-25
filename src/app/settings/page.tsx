@@ -3,20 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Reorder } from "framer-motion";
-import { ChevronLeft, Eye, EyeOff, Save, Trash2, Plus, X, GripVertical, FileDown, FileUp, Pencil } from "lucide-react";
+import { ChevronLeft, Save, Trash2, Plus, X, GripVertical, FileDown, FileUp, Pencil } from "lucide-react";
 import { loadSettings, saveSettings, importJSON, loadItems, saveItems, loadRecords, generateId, resetItemOrder, exportJSON } from "@/lib/storage";
 import { exportToCSV, parseCSV, downloadFile } from "@/lib/csvParser";
 import { AppSettings, ItemMaster, ItemCategory } from "@/lib/types";
-
-// 全角→半角変換 + 数値・小数点のみ許可
-const sanitizeNum = (v: string) => {
-  const half = v.replace(/[０-９．]/g, s =>
-    s === "．" ? "." : String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
-  );
-  const c = half.replace(/[^0-9.]/g, "");
-  const parts = c.split(".");
-  return parts.length > 2 ? parts[0] + "." + parts.slice(1).join("") : c;
-};
+import { sanitizeNum } from "@/lib/utils";
 
 const CATEGORY_OPTIONS: { value: ItemCategory; label: string }[] = [
   { value: "liver",          label: "肝機能" },
@@ -36,8 +27,7 @@ const EMPTY_NEW_ITEM = {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [settings, setSettings] = useState<AppSettings>({ geminiApiKey: "", defaultView: "list", changeHighlight: true, changeThreshold: 10, aiSeasonalYears: 2, aiRecentRecords: 3 });
-  const [showKey, setShowKey] = useState(false);
+  const [settings, setSettings] = useState<AppSettings>({ defaultView: "list", changeHighlight: true, changeThreshold: 10, aiSeasonalYears: 2, aiRecentRecords: 3 });
   const [saved, setSaved] = useState(false);
   const [importMsg, setImportMsg] = useState("");
   const [items, setItems] = useState<ItemMaster[]>([]);
@@ -386,44 +376,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {/* Gemini API キー */}
-        {!process.env.NEXT_PUBLIC_GEMINI_API_KEY && (
-          <section className="bg-white mx-4 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-              <h2 className="text-sm font-semibold text-gray-600">Gemini API設定</h2>
-            </div>
-            <div className="p-4 space-y-3">
-              <div>
-                <label className="text-xs text-gray-500 font-medium block mb-1">APIキー</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type={showKey ? "text" : "password"}
-                    value={settings.geminiApiKey}
-                    onChange={(e) => setSettings({ ...settings, geminiApiKey: e.target.value })}
-                    placeholder="AIza..."
-                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-red-400 font-mono"
-                  />
-                  <button onClick={() => setShowKey((v) => !v)} className="text-gray-400 p-2">
-                    {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                <p className="text-[11px] text-gray-400 mt-1">
-                  Google AI Studio から取得したAPIキーを入力してください
-                </p>
-              </div>
-              <button
-                onClick={handleSave}
-                className={`w-full py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition ${
-                  saved ? "bg-green-500 text-white" : "bg-red-600 text-white hover:bg-red-700"
-                }`}
-              >
-                <Save size={16} />
-                {saved ? "保存しました！" : "保存する"}
-              </button>
-            </div>
-          </section>
-        )}
-
         {/* データ管理 */}
         <section className="bg-white mx-4 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2">
@@ -527,6 +479,7 @@ export default function SettingsPage() {
                     type="text"
                     value={newItem.name}
                     onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    maxLength={100}
                     placeholder="例: HbA1c"
                     className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
                   />
@@ -537,6 +490,7 @@ export default function SettingsPage() {
                     type="text"
                     value={newItem.id}
                     onChange={(e) => setNewItem({ ...newItem, id: e.target.value })}
+                    maxLength={50}
                     placeholder="例: HbA1c"
                     className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
                   />
