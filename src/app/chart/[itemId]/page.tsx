@@ -212,10 +212,13 @@ export default function ChartPage() {
           {/* 項目間ナビ */}
           <div className="flex items-center gap-1 shrink-0">
             <button
-              onClick={() => prevItem && router.replace(`/chart/${prevItem.id}`)}
-              disabled={!prevItem}
+              onClick={() => {
+                const target = prevItem ?? (allItems.length > 1 ? allItems[allItems.length - 1] : null);
+                target && router.replace(`/chart/${target.id}`);
+              }}
+              disabled={allItems.length <= 1}
               className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
-              title={prevItem?.name}
+              title={prevItem?.name ?? allItems[allItems.length - 1]?.name}
             >
               <ChevronLeft size={18} />
             </button>

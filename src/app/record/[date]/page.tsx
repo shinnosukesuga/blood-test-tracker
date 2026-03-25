@@ -191,7 +191,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
       <header className="bg-red-600 text-white px-4 pt-4 pb-3 sticky top-0 z-20 shadow-md">
         <div className="flex items-center gap-1">
           <button onClick={() => router.push("/")} className="p-3 -ml-2 shrink-0">
-            <ChevronLeft size={24} />
+            <ChevronLeft size={20} />
           </button>
           <div className="flex-1 min-w-0 text-center">
             <p className="text-red-200 text-[11px]">検査結果</p>
@@ -200,10 +200,13 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
           {/* 前回・翌回ナビ */}
           <div className="flex items-center gap-1 shrink-0">
             <button
-              onClick={() => prevRecord && router.replace(`/record/${prevRecord.date}`)}
-              disabled={!prevRecord}
+              onClick={() => {
+                const target = prevRecord ?? (allRecords.length > 1 ? allRecords[0] : null);
+                target && router.replace(`/record/${target.date}`);
+              }}
+              disabled={allRecords.length <= 1}
               className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
-              title={prevRecord?.date}
+              title={prevRecord?.date ?? allRecords[0]?.date}
             >
               <ChevronLeft size={18} />
             </button>

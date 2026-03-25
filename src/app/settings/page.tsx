@@ -202,6 +202,7 @@ export default function SettingsPage() {
   const [reorderMode, setReorderMode] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedDeleteIds, setSelectedDeleteIds] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [itemsMsg, setItemsMsg] = useState("");
   const userDraggedRef = useRef(false);
   const [showDataHelp, setShowDataHelp] = useState(false);
@@ -461,12 +462,14 @@ export default function SettingsPage() {
     setItems(updated);
     setOrigOrder(updated.map(i => i.id));
     setSelectedDeleteIds(new Set());
+    setShowDeleteConfirm(false);
     setDeleteMode(false);
     setItemsMsg(`${ids.size}件を削除しました`);
   };
 
   const handleDeleteCancel = () => {
     setSelectedDeleteIds(new Set());
+    setShowDeleteConfirm(false);
     setDeleteMode(false);
   };
 
@@ -482,7 +485,7 @@ export default function SettingsPage() {
       </header>
 
       {/* 削除確認バー */}
-      {deleteMode && selectedDeleteIds.size > 0 && (
+      {showDeleteConfirm && (
         <div className="bg-red-50 border-b border-red-200 px-4 py-3 sticky top-[56px] z-10">
           <p className="text-sm font-medium text-red-800 mb-2">
             {selectedDeleteIds.size}件を削除しますか？（この操作は元に戻せません）
@@ -495,7 +498,7 @@ export default function SettingsPage() {
               削除する
             </button>
             <button
-              onClick={handleDeleteCancel}
+              onClick={() => setShowDeleteConfirm(false)}
               className="flex-1 py-2 bg-white border border-red-300 text-red-700 rounded-xl text-xs font-medium"
             >
               キャンセル
@@ -873,6 +876,30 @@ export default function SettingsPage() {
               />
             ))}
           </Reorder.Group>
+
+          {/* 削除モード時の操作バー */}
+          {deleteMode && (
+            <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2">
+              <span className="text-xs text-gray-500">
+                {selectedDeleteIds.size > 0 ? `${selectedDeleteIds.size}件選択中` : "項目をタップして選択"}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDeleteCancel}
+                  className="px-4 py-1.5 rounded-full text-xs font-medium bg-white border border-gray-200 text-gray-500"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={() => selectedDeleteIds.size > 0 && setShowDeleteConfirm(true)}
+                  disabled={selectedDeleteIds.size === 0}
+                  className="px-4 py-1.5 rounded-full text-xs font-bold bg-red-600 text-white disabled:opacity-30"
+                >
+                  削除実行
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="px-4 text-center">
