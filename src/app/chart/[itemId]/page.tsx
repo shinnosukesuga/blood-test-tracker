@@ -148,15 +148,14 @@ export default function ChartPage() {
   })();
   const isAllYears = hiddenYears.size === 0;
 
-  // チャートのY軸範囲（データ + 閾値を含めて自動調整）
+  // チャートのY軸範囲（実データのみで決定。基準値はライン描画のみに使用）
   const allValues = records
     .map(r => r.values[itemId])
     .filter((v): v is number => v !== undefined);
-  const refValues = [item?.range.min, item?.range.max].filter((v): v is number => v !== null && v !== undefined);
-  const allForDomain = [...allValues, ...refValues];
-  const rawMin = allForDomain.length ? Math.min(...allForDomain) : 0;
-  const rawMax = allForDomain.length ? Math.max(...allForDomain) : 100;
-  const padding = (rawMax - rawMin) * 0.1 || 5;
+  const rawMin = allValues.length ? Math.min(...allValues) : 0;
+  const rawMax = allValues.length ? Math.max(...allValues) : 100;
+  const spread = rawMax - rawMin || rawMax * 0.2 || 10;
+  const padding = spread * 0.25;
   const domainMin = Math.floor(rawMin - padding);
   const domainMax = Math.ceil(rawMax + padding);
 
