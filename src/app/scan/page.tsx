@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Upload, ChevronLeft, Check, X, Sparkles, AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
+import { ChevronLeft, Check, X, Sparkles, AlertTriangle, Play, ImagePlus } from "lucide-react";
 import { GeminiScanResult, BloodRecord } from "@/lib/types";
 import { loadItems, saveRecord, generateId } from "@/lib/storage";
 import DatePicker from "@/components/DatePicker";
 import { scanImageWithGemini, fileToBase64, analyzeRecords } from "@/lib/gemini";
-import { isAbnormal, findItem } from "@/lib/itemMaster";
+import { findItem } from "@/lib/itemMaster";
 import { loadRecords, getPreviousRecord } from "@/lib/storage";
 import { sanitizeNum } from "@/lib/utils";
 
@@ -26,10 +26,11 @@ interface ScanItem {
 export default function ScanPage() {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<"upload" | "review" | "saving" | "done">("upload");
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  // ステージング（スキャン前の画像キュー）
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+  const [stagedUrls, setStagedUrls] = useState<string[]>([]);
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number } | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -39,21 +40,36 @@ export default function ScanPage() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
 
-  const processFiles = async (files: File[]) => {
+  // ファイルをステージングキューに追加
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const newUrls = files.map(f => URL.createObjectURL(f));
+    setStagedFiles(prev => [...prev, ...files]);
+    setStagedUrls(prev => [...prev, ...newUrls]);
+    e.target.value = ""; // 同じファイルを再選択できるようリセット
+  };
+
+  const removeStagedFile = (idx: number) => {
+    setStagedFiles(prev => prev.filter((_, i) => i !== idx));
+    setStagedUrls(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const processFiles = async () => {
+    if (stagedFiles.length === 0) return;
     setScanError(null);
-    setPreviewUrls(files.map(f => URL.createObjectURL(f)));
     setScanning(true);
-    setScanProgress({ current: 0, total: files.length });
+    setScanProgress({ current: 0, total: stagedFiles.length });
 
     try {
       const items = loadItems();
       const mergedMap = new Map<string, ScanItem>();
       let detectedDate: string | null = null;
 
-      for (let i = 0; i < files.length; i++) {
-        setScanProgress({ current: i + 1, total: files.length });
-        const base64 = await fileToBase64(files[i]);
-        const mimeType = files[i].type || "image/jpeg";
+      for (let i = 0; i < stagedFiles.length; i++) {
+        setScanProgress({ current: i + 1, total: stagedFiles.length });
+        const base64 = await fileToBase64(stagedFiles[i]);
+        const mimeType = stagedFiles[i].type || "image/jpeg";
         const result: GeminiScanResult = await scanImageWithGemini(base64, mimeType);
 
         if (result.date && !detectedDate) detectedDate = result.date;
@@ -84,9 +100,12 @@ export default function ScanPage() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    if (files.length > 0) processFiles(files);
+  const resetUpload = () => {
+    setStagedFiles([]);
+    setStagedUrls([]);
+    setScanItems([]);
+    setScanError(null);
+    setStep("upload");
   };
 
   const updateValue = (idx: number, value: string) => {
@@ -123,15 +142,13 @@ export default function ScanPage() {
     try {
       const items = loadItems();
       const prev = getPreviousRecord(scanDate);
-      {
-        const analysis = await analyzeRecords(record, prev, items);
-        if (analysis.hasSignificantChanges) {
-          setAiAnalysis(
-            [analysis.summary, ...analysis.insights, ...analysis.recommendations.map((r) => `• ${r}`)].join("\n")
-          );
-        } else {
-          setAiAnalysis(analysis.summary);
-        }
+      const analysis = await analyzeRecords(record, prev, items);
+      if (analysis.hasSignificantChanges) {
+        setAiAnalysis(
+          [analysis.summary, ...analysis.insights, ...analysis.recommendations.map((r) => `• ${r}`)].join("\n")
+        );
+      } else {
+        setAiAnalysis(analysis.summary);
       }
     } catch {
       // 分析は任意なのでエラーは無視
@@ -191,51 +208,61 @@ export default function ScanPage() {
                 )}
                 <p className="text-sm text-gray-400 mt-1">しばらくお待ちください</p>
               </motion.div>
-            ) : (
+            ) : stagedFiles.length === 0 ? (
+              /* ── 画像未選択: 初期画面 ── */
               <div className="space-y-4">
-                {previewUrls.length > 0 && (
-                  <div className={`grid gap-2 ${previewUrls.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
-                    {previewUrls.map((url, i) => (
-                      <img
-                        key={i}
-                        src={url}
-                        alt={`スキャン画像 ${i + 1}`}
-                        className="w-full rounded-xl shadow object-contain max-h-40"
-                      />
-                    ))}
-                  </div>
-                )}
-
-                <button
-                  onClick={() => cameraRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-3 p-4 bg-red-600 text-white rounded-2xl font-semibold shadow hover:bg-red-700 active:scale-95 transition"
-                >
-                  <Camera size={22} />
-                  カメラで撮影
-                </button>
-
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-3 p-4 bg-white text-gray-700 rounded-2xl font-semibold shadow border border-gray-200 hover:bg-gray-50 active:scale-95 transition"
+                  className="w-full flex items-center justify-center gap-3 p-4 bg-red-600 text-white rounded-2xl font-semibold shadow hover:bg-red-700 active:scale-95 transition"
                 >
-                  <Upload size={22} />
-                  ギャラリーから選択（複数可）
+                  <ImagePlus size={22} />
+                  写真を選択
+                </button>
+                <p className="text-center text-xs text-gray-400">
+                  複数枚ある場合、まとめて選択できます
+                </p>
+              </div>
+            ) : (
+              /* ── 画像ステージング済み ── */
+              <div className="space-y-4">
+                {/* プレビューグリッド */}
+                <div className={`grid gap-2 ${stagedUrls.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+                  {stagedUrls.map((url, i) => (
+                    <div key={i} className="relative">
+                      <img
+                        src={url}
+                        alt={`画像 ${i + 1}`}
+                        className="w-full rounded-xl shadow object-contain max-h-40 bg-gray-100"
+                      />
+                      <button
+                        onClick={() => removeStagedFile(i)}
+                        className="absolute top-1 right-1 w-6 h-6 bg-black/50 rounded-full flex items-center justify-center"
+                      >
+                        <X size={12} className="text-white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 追加・スキャン */}
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-2 p-3 bg-white text-gray-600 rounded-xl border border-gray-200 text-sm font-medium hover:bg-gray-50 active:scale-95 transition"
+                >
+                  <ImagePlus size={16} />
+                  ＋写真を追加
                 </button>
 
-                <p className="text-center text-xs text-gray-400">
-                  複数ページある場合は複数枚まとめて選択できます
-                </p>
+                <button
+                  onClick={processFiles}
+                  className="w-full flex items-center justify-center gap-3 p-4 bg-red-600 text-white rounded-2xl font-semibold shadow hover:bg-red-700 active:scale-95 transition"
+                >
+                  <Play size={20} />
+                  スキャン開始（{stagedFiles.length}枚）
+                </button>
               </div>
             )}
 
-            <input
-              ref={cameraRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={handleFileChange}
-            />
             <input
               ref={fileRef}
               type="file"
@@ -349,7 +376,7 @@ export default function ScanPage() {
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
               <div className="max-w-md mx-auto flex gap-3">
                 <button
-                  onClick={() => { setStep("upload"); setScanItems([]); setPreviewUrls([]); }}
+                  onClick={resetUpload}
                   className="flex-none px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium"
                 >
                   撮り直す
