@@ -29,6 +29,7 @@ interface SortableItemRowProps {
   item: ItemMaster;
   editingId: string | null;
   editValues: { rangeMin: string; rangeMax: string; unit: string };
+  reorderMode: boolean;
   onStartEdit: (item: ItemMaster) => void;
   onSaveEdit: (id: string) => void;
   onToggleVisibility: (id: string) => void;
@@ -36,7 +37,7 @@ interface SortableItemRowProps {
 }
 
 function SortableItemRow({
-  item, editingId, editValues,
+  item, editingId, editValues, reorderMode,
   onStartEdit, onSaveEdit, onToggleVisibility, onEditValuesChange,
 }: SortableItemRowProps) {
   const controls = useDragControls();
@@ -51,10 +52,10 @@ function SortableItemRow({
     >
       {/* 行ヘッダー */}
       <div className="flex items-center px-3 py-2.5 gap-2">
-        {/* グリップ（ここからのみドラッグ可） */}
+        {/* グリップ（並び替えモード時のみ有効） */}
         <div
-          className="text-gray-300 cursor-grab active:cursor-grabbing shrink-0 touch-none"
-          onPointerDown={(e) => controls.start(e)}
+          className={`shrink-0 touch-none ${reorderMode ? "text-gray-400 cursor-grab active:cursor-grabbing" : "text-gray-200 cursor-default"}`}
+          onPointerDown={reorderMode ? (e) => controls.start(e) : undefined}
         >
           <GripVertical size={16} />
         </div>
@@ -170,6 +171,7 @@ export default function SettingsPage() {
   const [editValues, setEditValues] = useState<{ rangeMin: string; rangeMax: string; unit: string }>({
     rangeMin: "", rangeMax: "", unit: "",
   });
+  const [reorderMode, setReorderMode] = useState(false);
   const [showDataHelp, setShowDataHelp] = useState(false);
   const dataHelpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -589,7 +591,20 @@ export default function SettingsPage() {
           <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold text-gray-600">検査項目の管理</h2>
-              <p className="text-[11px] text-gray-400 mt-0.5">ドラッグで並び替え・基準値編集・表示ON/OFF</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">基準値編集・表示ON/OFF</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setReorderMode((v) => !v)}
+                className={`flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full transition ${
+                  reorderMode
+                    ? "bg-red-600 text-white"
+                    : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                <GripVertical size={12} />
+                並び替え
+              </button>
             </div>
             <button
               onClick={() => setShowAddForm((v) => !v)}
@@ -696,6 +711,7 @@ export default function SettingsPage() {
                 item={item}
                 editingId={editingId}
                 editValues={editValues}
+                reorderMode={reorderMode}
                 onStartEdit={startEdit}
                 onSaveEdit={saveEdit}
                 onToggleVisibility={toggleItemVisibility}
