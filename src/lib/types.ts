@@ -7,23 +7,12 @@ export interface ItemRange {
   max: number | null;
 }
 
-export type ItemCategory =
-  | "liver"
-  | "kidney"
-  | "blood"
-  | "differential"
-  | "inflammation"
-  | "metabolic"
-  | "cardiovascular"
-  | "other";
-
 export interface ItemMaster {
   id: string;           // 主キー（略称ベース）e.g. "AST"
   name: string;         // 表示名 e.g. "GOT"
   aliases: string[];    // 別名・略称 e.g. ["AST", "GOT"]
   unit: string;         // 単位 e.g. "U/L"
   range: ItemRange;     // 基準値
-  category: ItemCategory;
   order: number;        // 表示順（D&D で変更可）
   visible: boolean;     // 一覧に表示するか
 }

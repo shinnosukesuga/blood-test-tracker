@@ -6,23 +6,11 @@ import { Reorder, useDragControls } from "framer-motion";
 import { ChevronLeft, Save, Trash2, Plus, X, GripVertical, FileDown, FileUp, Pencil } from "lucide-react";
 import { loadSettings, saveSettings, importJSON, loadItems, saveItems, loadRecords, generateId, resetItemOrder, exportJSON } from "@/lib/storage";
 import { exportToCSV, parseCSV, downloadFile } from "@/lib/csvParser";
-import { AppSettings, ItemMaster, ItemCategory } from "@/lib/types";
+import { AppSettings, ItemMaster } from "@/lib/types";
 import { sanitizeNum } from "@/lib/utils";
-
-const CATEGORY_OPTIONS: { value: ItemCategory; label: string }[] = [
-  { value: "liver",          label: "肝機能" },
-  { value: "kidney",         label: "腎機能" },
-  { value: "metabolic",      label: "代謝系" },
-  { value: "inflammation",   label: "炎症" },
-  { value: "cardiovascular", label: "血圧" },
-  { value: "blood",          label: "血液" },
-  { value: "differential",   label: "白血球分画" },
-  { value: "other",          label: "その他" },
-];
 
 const EMPTY_NEW_ITEM = {
   name: "", id: "", unit: "", rangeMin: "", rangeMax: "",
-  category: "other" as ItemCategory,
 };
 
 interface SortableItemRowProps {
@@ -149,25 +137,33 @@ function SortableItemRow({
             </div>
             <div>
               <label className="text-[11px] text-gray-500 font-medium">基準値 下限</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={editValues.rangeMin}
-                onChange={(e) => onEditValuesChange({ ...editValues, rangeMin: sanitizeNum(e.target.value) })}
-                placeholder="—"
-                className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-              />
+              <div className="flex gap-1 mt-0.5">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={editValues.rangeMin}
+                  onChange={(e) => onEditValuesChange({ ...editValues, rangeMin: sanitizeNum(e.target.value) })}
+                  placeholder="—"
+                  className="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+                />
+                <button type="button" onClick={() => onEditValuesChange({ ...editValues, rangeMin: editValues.rangeMin.includes(".") ? editValues.rangeMin : editValues.rangeMin + "." })}
+                  className="px-2 py-1.5 text-sm bg-gray-100 border border-gray-200 rounded-lg text-gray-500 font-mono shrink-0">.</button>
+              </div>
             </div>
             <div>
               <label className="text-[11px] text-gray-500 font-medium">基準値 上限</label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={editValues.rangeMax}
-                onChange={(e) => onEditValuesChange({ ...editValues, rangeMax: sanitizeNum(e.target.value) })}
-                placeholder="—"
-                className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-              />
+              <div className="flex gap-1 mt-0.5">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={editValues.rangeMax}
+                  onChange={(e) => onEditValuesChange({ ...editValues, rangeMax: sanitizeNum(e.target.value) })}
+                  placeholder="—"
+                  className="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+                />
+                <button type="button" onClick={() => onEditValuesChange({ ...editValues, rangeMax: editValues.rangeMax.includes(".") ? editValues.rangeMax : editValues.rangeMax + "." })}
+                  className="px-2 py-1.5 text-sm bg-gray-100 border border-gray-200 rounded-lg text-gray-500 font-mono shrink-0">.</button>
+              </div>
             </div>
           </div>
           <button
@@ -198,6 +194,7 @@ export default function SettingsPage() {
     name: "", alias: "", rangeMin: "", rangeMax: "", unit: "",
   });
   const [reorderMode, setReorderMode] = useState(false);
+  const [itemsMsg, setItemsMsg] = useState("");
   const [showDataHelp, setShowDataHelp] = useState(false);
   const dataHelpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -273,7 +270,7 @@ export default function SettingsPage() {
         if (matched) {
           csvIdToCanonicalId.set(csvId, matched);
         } else {
-          itemsById.set(csvId, { id: csvId, name: upd.name, aliases: upd.alias ? [upd.alias, upd.name] : [upd.name], unit: upd.unit, range: { min: upd.rangeMin, max: upd.rangeMax }, category: "other", order: nextOrder++, visible: true });
+          itemsById.set(csvId, { id: csvId, name: upd.name, aliases: upd.alias ? [upd.alias, upd.name] : [upd.name], unit: upd.unit, range: { min: upd.rangeMin, max: upd.rangeMax }, order: nextOrder++, visible: true });
           csvIdToCanonicalId.set(csvId, csvId);
         }
       }
@@ -343,8 +340,14 @@ export default function SettingsPage() {
   };
 
   const handleReorderRevert = () => {
-    const restored = [...items].sort((a, b) => origOrder.indexOf(a.id) - origOrder.indexOf(b.id))
-      .map((item, idx) => ({ ...item, order: idx }));
+    const restored = [...items].sort((a, b) => {
+      const ai = origOrder.indexOf(a.id);
+      const bi = origOrder.indexOf(b.id);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    }).map((item, idx) => ({ ...item, order: idx }));
     setItems(restored);
     setShowReorderConfirm(false);
     setReorderMode(false);
@@ -398,7 +401,7 @@ export default function SettingsPage() {
     setItems(updated);
     saveItems(updated);
     setEditingId(null);
-    setImportMsg("基準値を更新しました");
+    setItemsMsg("更新しました");
   };
 
   const handleAddItem = () => {
@@ -417,23 +420,23 @@ export default function SettingsPage() {
         min: newItem.rangeMin !== "" ? parseFloat(newItem.rangeMin) : null,
         max: newItem.rangeMax !== "" ? parseFloat(newItem.rangeMax) : null,
       },
-      category: newItem.category,
       order: items.length,
       visible: true,
     };
     const updated = [...items, item];
     saveItems(updated);
     setItems(updated);
+    setOrigOrder(updated.map(i => i.id));
     setNewItem(EMPTY_NEW_ITEM);
     setShowAddForm(false);
-    setImportMsg(`「${item.name}」を追加しました`);
+    setItemsMsg(`「${item.name}」を追加しました`);
   };
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-gray-50">
       <header className="bg-red-600 text-white px-4 pt-4 pb-3 sticky top-0 z-10 shadow-md">
         <div className="flex items-center gap-3">
-          <button onClick={handleBack} className="p-1">
+          <button onClick={handleBack} className="p-3 -ml-2">
             <ChevronLeft size={24} />
           </button>
           <h1 className="text-lg font-bold">設定</h1>
@@ -698,6 +701,13 @@ export default function SettingsPage() {
             </button>
           </div>
 
+          {/* 項目管理メッセージ */}
+          {itemsMsg && (
+            <div className="px-4 py-2 bg-green-50 border-b border-green-100">
+              <p className="text-sm text-green-700">{itemsMsg}</p>
+            </div>
+          )}
+
           {/* 新規項目追加フォーム */}
           {showAddForm && (
             <div className="p-4 bg-red-50 border-b border-red-100 space-y-2">
@@ -738,38 +748,34 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <label className="text-[11px] text-gray-500 font-medium">基準値 下限</label>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={newItem.rangeMin}
-                    onChange={(e) => setNewItem({ ...newItem, rangeMin: sanitizeNum(e.target.value) })}
-                    placeholder="—"
-                    className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-                  />
+                  <div className="flex gap-1 mt-0.5">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={newItem.rangeMin}
+                      onChange={(e) => setNewItem({ ...newItem, rangeMin: sanitizeNum(e.target.value) })}
+                      placeholder="—"
+                      className="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+                    />
+                    <button type="button" onClick={() => setNewItem({ ...newItem, rangeMin: newItem.rangeMin.includes(".") ? newItem.rangeMin : newItem.rangeMin + "." })}
+                      className="px-2 py-1.5 text-sm bg-white border border-gray-200 rounded-lg text-gray-500 font-mono shrink-0">.</button>
+                  </div>
                 </div>
                 <div>
                   <label className="text-[11px] text-gray-500 font-medium">基準値 上限</label>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={newItem.rangeMax}
-                    onChange={(e) => setNewItem({ ...newItem, rangeMax: sanitizeNum(e.target.value) })}
-                    placeholder="—"
-                    className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-                  />
+                  <div className="flex gap-1 mt-0.5">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={newItem.rangeMax}
+                      onChange={(e) => setNewItem({ ...newItem, rangeMax: sanitizeNum(e.target.value) })}
+                      placeholder="—"
+                      className="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+                    />
+                    <button type="button" onClick={() => setNewItem({ ...newItem, rangeMax: newItem.rangeMax.includes(".") ? newItem.rangeMax : newItem.rangeMax + "." })}
+                      className="px-2 py-1.5 text-sm bg-white border border-gray-200 rounded-lg text-gray-500 font-mono shrink-0">.</button>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="text-[11px] text-gray-500 font-medium">カテゴリ</label>
-                <select
-                  value={newItem.category}
-                  onChange={(e) => setNewItem({ ...newItem, category: e.target.value as ItemCategory })}
-                  className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-                >
-                  {CATEGORY_OPTIONS.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </select>
               </div>
               <button
                 onClick={handleAddItem}

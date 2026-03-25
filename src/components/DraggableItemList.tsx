@@ -48,7 +48,7 @@ function ItemRow({ item, value }: { item: ItemMaster; value: number | undefined 
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5">
-          <span className={`text-sm font-medium ${textCls}`}>{item.name}</span>
+          <span className={`text-sm font-medium truncate ${textCls}`}>{item.name}</span>
           {abbr && <span className="text-xs text-gray-400">{abbr}</span>}
         </div>
         {rangeText(item) && <div className="text-[11px] text-gray-400 mt-0.5">{rangeText(item)}</div>}

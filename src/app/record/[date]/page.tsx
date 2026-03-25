@@ -4,7 +4,7 @@ import { use, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Settings, TrendingUp, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings, TrendingUp, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send } from "lucide-react";
 import { loadRecords, loadItems, saveRecord, deleteRecord, loadSettings, loadAIConversation, saveAIMessage } from "@/lib/storage";
 import { isAbnormal } from "@/lib/itemMaster";
 import { BloodRecord, ItemMaster, AIMessage } from "@/lib/types";
@@ -180,28 +180,52 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
 
   const allSortedItems = [...items].sort((a, b) => a.order - b.order);
 
+  // allRecords は降順（新→旧）なので index+1 が前回、index-1 が翌回
+  const currentRecordIdx = allRecords.findIndex(r => r.date === date);
+  const prevRecord = currentRecordIdx < allRecords.length - 1 ? allRecords[currentRecordIdx + 1] : null;
+  const nextRecord = currentRecordIdx > 0 ? allRecords[currentRecordIdx - 1] : null;
+
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col bg-gray-50">
       {/* ヘッダー */}
       <header className="bg-red-600 text-white px-4 pt-4 pb-3 sticky top-0 z-20 shadow-md">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push("/")} className="p-1 -ml-1">
+        <div className="flex items-center gap-1">
+          <button onClick={() => router.push("/")} className="p-3 -ml-2 shrink-0">
             <ChevronLeft size={24} />
           </button>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0 text-center">
             <p className="text-red-200 text-[11px]">検査結果</p>
-            <h1 className="text-base font-bold leading-tight">{record ? fmtDay(record.date) : date}</h1>
+            <h1 className="text-base font-bold leading-tight truncate">{record ? fmtDay(record.date) : date}</h1>
+          </div>
+          {/* 前回・翌回ナビ */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => prevRecord && router.replace(`/record/${prevRecord.date}`)}
+              disabled={!prevRecord}
+              className="p-2 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
+              title={prevRecord?.date}
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => nextRecord && router.replace(`/record/${nextRecord.date}`)}
+              disabled={!nextRecord}
+              className="p-2 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
+              title={nextRecord?.date}
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
           <button
             onClick={() => setConfirmDelete(true)}
-            className="p-2 rounded-full bg-red-500 hover:bg-red-400 transition"
+            className="p-2 rounded-full bg-red-500 hover:bg-red-400 transition shrink-0"
             title="削除"
           >
             <Trash2 size={16} />
           </button>
           <button
             onClick={openEdit}
-            className="p-2 rounded-full bg-red-500 hover:bg-red-400 transition"
+            className="p-2 rounded-full bg-red-500 hover:bg-red-400 transition shrink-0"
             title="編集"
           >
             <Pencil size={16} />

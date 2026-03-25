@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   LineChart,
@@ -202,7 +203,7 @@ export default function ChartPage() {
       {/* ヘッダー */}
       <header className="bg-red-600 text-white px-4 pt-4 pb-3 sticky top-0 z-10 shadow-md">
         <div className="flex items-center gap-2">
-          <button onClick={() => router.back()} className="p-1 shrink-0">
+          <button onClick={() => router.back()} className="p-3 -ml-2 shrink-0">
             <ChevronLeft size={24} />
           </button>
           <div className="flex-1 min-w-0 text-center">
@@ -490,7 +491,7 @@ placeholder="メモを入力..."
                 const valCls = t === "high" ? "text-red-600" : t === "low" ? "text-blue-600" : "text-gray-800";
                 const badgeCls = t === "high" ? "text-red-500 bg-red-100" : "text-blue-500 bg-blue-100";
                 return (
-                  <div key={r.id} className={`flex items-center px-4 py-2.5 ${bgCls}`}>
+                  <Link key={r.id} href={`/record/${r.date}`} className={`flex items-center px-4 py-2.5 active:opacity-70 transition-opacity ${bgCls}`}>
                     <span className="text-sm text-gray-500 flex-1 tabular-nums">{r.date}</span>
                     {/* grid で バッジ・数値・単位を固定幅に */}
                     <div className="shrink-0 grid items-center" style={{gridTemplateColumns:"24px 72px 52px"}}>
@@ -500,7 +501,8 @@ placeholder="メモを入力..."
                       <span className={`text-base font-bold tabular-nums text-right pr-1 ${valCls}`}>{val}</span>
                       <span className="text-xs text-gray-400 truncate">{item.unit}</span>
                     </div>
-                  </div>
+                    <ChevronRight size={14} className="ml-1 text-gray-300 shrink-0" />
+                  </Link>
                 );
               })}
           </div>
