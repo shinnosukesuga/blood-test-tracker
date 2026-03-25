@@ -148,8 +148,9 @@ export default function ChartPage() {
   })();
   const isAllYears = hiddenYears.size === 0;
 
-  // チャートのY軸範囲（実データのみで決定。基準値はライン描画のみに使用）
+  // チャートのY軸範囲（表示中の年のデータのみで計算）
   const allValues = records
+    .filter(r => !hiddenYears.has(r.date.split("-")[0]))
     .map(r => r.values[itemId])
     .filter((v): v is number => v !== undefined);
   const rawMin = allValues.length ? Math.min(...allValues) : 0;
