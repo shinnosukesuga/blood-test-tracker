@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Settings, Plus, ChevronRight, TrendingUp, Check, X, PenLine, Trash2, AlertTriangle } from "lucide-react";
+import { Camera, Settings, Plus, ChevronRight, TrendingUp, Check, X, PenLine, Trash2, AlertTriangle, CalendarDays } from "lucide-react";
 import { loadRecords, saveRecord, loadItems, generateId, deleteRecord } from "@/lib/storage";
 import { isAbnormal } from "@/lib/itemMaster";
 import { BloodRecord, ItemMaster } from "@/lib/types";
@@ -131,38 +131,63 @@ export default function HomePage() {
 
       {/* 年・月フィルター（ヘッダー下） */}
       {records.length > 0 && (
-        <div className="bg-white border-b border-gray-100 px-4 py-2.5 flex items-center gap-2 sticky top-[56px] z-10">
-          <span className="text-xs text-gray-500 shrink-0 font-medium">年</span>
-          <select
-            value={selYear}
-            onChange={e => handleYearChange(e.target.value)}
-            className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-800 outline-none focus:border-red-400"
-          >
-            {years.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-          <span className="text-xs text-gray-500 shrink-0 font-medium">月</span>
-          <select
-            value={selMonth}
-            onChange={e => setSelMonth(e.target.value)}
-            className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-800 outline-none focus:border-red-400"
-          >
-            {months.map(m => (
-              <option key={m} value={m}>{m === "すべて" ? "すべて" : `${parseInt(m)}月`}</option>
-            ))}
-          </select>
-          {/* ゴミ箱ボタン */}
-          <button
-            onClick={toggleDeleteMode}
-            className={`p-2 rounded-lg border transition shrink-0 ${
-              deleteMode
-                ? "bg-red-50 border-red-300 text-red-600"
-                : "bg-gray-50 border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200"
-            }`}
-          >
-            {deleteMode ? <X size={16} /> : <Trash2 size={16} />}
-          </button>
+        <div className="bg-white border-b border-gray-100 sticky top-[56px] z-10">
+          {/* 年フィルター */}
+          <div className="flex items-center gap-2 px-3 pt-2 pb-1">
+            <div className="flex items-center gap-1 shrink-0">
+              <CalendarDays size={13} className="text-gray-400" />
+              <span className="text-xs text-gray-500 font-medium">年</span>
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar flex-1">
+              {years.map(y => (
+                <button
+                  key={y}
+                  onClick={() => handleYearChange(y)}
+                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium border transition ${
+                    selYear === y
+                      ? "bg-red-600 text-white border-red-600"
+                      : "bg-white text-gray-600 border-gray-200"
+                  }`}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+            {/* ゴミ箱ボタン */}
+            <button
+              onClick={toggleDeleteMode}
+              className={`p-1.5 rounded-lg border transition shrink-0 ${
+                deleteMode
+                  ? "bg-red-50 border-red-300 text-red-600"
+                  : "bg-gray-50 border-gray-200 text-gray-500"
+              }`}
+            >
+              {deleteMode ? <X size={15} /> : <Trash2 size={15} />}
+            </button>
+          </div>
+          {/* 月フィルター */}
+          <div className="flex items-center gap-2 px-3 pb-2">
+            <div className="flex items-center gap-1 shrink-0">
+              <CalendarDays size={13} className="text-gray-400 opacity-0" />
+              <span className="text-xs text-gray-500 font-medium">月</span>
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar flex-1">
+              {months.map(m => (
+                <button
+                  key={m}
+                  onClick={() => setSelMonth(m)}
+                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium border transition ${
+                    selMonth === m
+                      ? "bg-red-600 text-white border-red-600"
+                      : "bg-white text-gray-600 border-gray-200"
+                  }`}
+                >
+                  {m === "すべて" ? "全月" : `${parseInt(m)}月`}
+                </button>
+              ))}
+            </div>
+            <div className="w-[34px] shrink-0" />
+          </div>
         </div>
       )}
 

@@ -158,7 +158,8 @@ export default function ChartPage() {
   const rawMax = allValues.length ? Math.max(...allValues) : 100;
   const spread = rawMax - rawMin || rawMax * 0.2 || 10;
   const padding = spread * 0.25;
-  const domainMin = Math.floor(rawMin - padding);
+  const rawDomainMin = Math.floor(rawMin - padding);
+  const domainMin = rawMin >= 0 ? Math.max(0, rawDomainMin) : rawDomainMin;
   const domainMax = Math.ceil(rawMax + padding);
 
   // 最新値と前回比
@@ -261,7 +262,7 @@ export default function ChartPage() {
                     ? "text-gray-800"
                     : change > 0 ? "text-red-500" : "text-blue-500"
                 }`}>
-                  前回比: {latestValue > prevValue ? "+" : "-"}{Math.abs(latestValue - prevValue).toFixed(1)} {item.unit}（{latestValue > prevValue ? "+" : "-"}{Math.abs(change).toFixed(1)}%）
+                  前回比: {latestValue > prevValue ? "+" : "-"}{(() => { const d = Math.abs(latestValue - prevValue); return d < 0.1 ? d.toFixed(2) : d < 10 ? d.toFixed(1) : d.toFixed(0); })()} {item.unit}（{latestValue > prevValue ? "+" : "-"}{Math.abs(change).toFixed(1)}%）
                   <button
                     onClick={() => {
                       if (changeHelpTimerRef.current) clearTimeout(changeHelpTimerRef.current);
