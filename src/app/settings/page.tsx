@@ -22,11 +22,12 @@ interface SortableItemRowProps {
   onSaveEdit: (id: string) => void;
   onToggleVisibility: (id: string) => void;
   onEditValuesChange: (v: { name: string; alias: string; rangeMin: string; rangeMax: string; unit: string }) => void;
+  onDeleteRequest: (id: string) => void;
 }
 
 function SortableItemRow({
   item, editingId, editValues, reorderMode,
-  onStartEdit, onSaveEdit, onToggleVisibility, onEditValuesChange,
+  onStartEdit, onSaveEdit, onToggleVisibility, onEditValuesChange, onDeleteRequest,
 }: SortableItemRowProps) {
   const controls = useDragControls();
   return (
@@ -44,8 +45,8 @@ function SortableItemRow({
       <div className="flex items-center px-3 py-2.5 gap-2">
         {/* グリップ（並び替えモード時のみ有効） */}
         <div
-          className={`shrink-0 touch-none ${reorderMode ? "text-gray-400 cursor-grab active:cursor-grabbing" : "text-gray-200 cursor-default"}`}
-          onPointerDown={reorderMode ? (e) => controls.start(e) : undefined}
+          className={`shrink-0 touch-none px-1 py-2 ${reorderMode ? "text-gray-400 cursor-grab active:cursor-grabbing" : "text-gray-200 cursor-default"}`}
+          onPointerDown={reorderMode ? (e) => { e.preventDefault(); controls.start(e); } : undefined}
         >
           <GripVertical size={16} />
         </div>
@@ -71,6 +72,14 @@ function SortableItemRow({
             <span className="text-[11px] text-gray-400 shrink-0">{item.unit}</span>
           </div>
         </div>
+
+        {/* 削除ボタン */}
+        <button
+          onClick={() => onDeleteRequest(item.id)}
+          className="p-1.5 rounded-lg border shrink-0 transition bg-gray-50 border-gray-200 text-gray-300 hover:border-red-300 hover:text-red-400"
+        >
+          <Trash2 size={13} />
+        </button>
 
         {/* 編集ボタン */}
         <button
@@ -137,33 +146,25 @@ function SortableItemRow({
             </div>
             <div>
               <label className="text-[11px] text-gray-500 font-medium">基準値 下限</label>
-              <div className="flex gap-1 mt-0.5">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={editValues.rangeMin}
-                  onChange={(e) => onEditValuesChange({ ...editValues, rangeMin: sanitizeNum(e.target.value) })}
-                  placeholder="—"
-                  className="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-                />
-                <button type="button" onClick={() => onEditValuesChange({ ...editValues, rangeMin: editValues.rangeMin.includes(".") ? editValues.rangeMin : editValues.rangeMin + "." })}
-                  className="px-2 py-1.5 text-sm bg-gray-100 border border-gray-200 rounded-lg text-gray-500 font-mono shrink-0">.</button>
-              </div>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={editValues.rangeMin}
+                onChange={(e) => onEditValuesChange({ ...editValues, rangeMin: sanitizeNum(e.target.value) })}
+                placeholder="—"
+                className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+              />
             </div>
             <div>
               <label className="text-[11px] text-gray-500 font-medium">基準値 上限</label>
-              <div className="flex gap-1 mt-0.5">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={editValues.rangeMax}
-                  onChange={(e) => onEditValuesChange({ ...editValues, rangeMax: sanitizeNum(e.target.value) })}
-                  placeholder="—"
-                  className="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-                />
-                <button type="button" onClick={() => onEditValuesChange({ ...editValues, rangeMax: editValues.rangeMax.includes(".") ? editValues.rangeMax : editValues.rangeMax + "." })}
-                  className="px-2 py-1.5 text-sm bg-gray-100 border border-gray-200 rounded-lg text-gray-500 font-mono shrink-0">.</button>
-              </div>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={editValues.rangeMax}
+                onChange={(e) => onEditValuesChange({ ...editValues, rangeMax: sanitizeNum(e.target.value) })}
+                placeholder="—"
+                className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+              />
             </div>
           </div>
           <button
@@ -195,6 +196,8 @@ export default function SettingsPage() {
   });
   const [reorderMode, setReorderMode] = useState(false);
   const [itemsMsg, setItemsMsg] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const userDraggedRef = useRef(false);
   const [showDataHelp, setShowDataHelp] = useState(false);
   const dataHelpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -319,15 +322,18 @@ export default function SettingsPage() {
   };
 
   const handleReorder = (reordered: ItemMaster[]) => {
+    if (!reorderMode) return;
     const updated = reordered.map((item, idx) => ({ ...item, order: idx }));
     setItems(updated);
+    userDraggedRef.current = true;
     // 保存は並び替えモードOFF時に確認してから行う
   };
 
   const handleReorderModeToggle = () => {
-    if (reorderMode && isOrderChanged()) {
+    if (reorderMode && userDraggedRef.current) {
       setShowReorderConfirm(true);
     } else {
+      userDraggedRef.current = false;
       setReorderMode(false);
     }
   };
@@ -337,6 +343,7 @@ export default function SettingsPage() {
     setOrigOrder(items.map(i => i.id));
     setShowReorderConfirm(false);
     setReorderMode(false);
+    userDraggedRef.current = false;
   };
 
   const handleReorderRevert = () => {
@@ -351,6 +358,7 @@ export default function SettingsPage() {
     setItems(restored);
     setShowReorderConfirm(false);
     setReorderMode(false);
+    userDraggedRef.current = false;
   };
 
   const toggleItemVisibility = (id: string) => {
@@ -408,7 +416,7 @@ export default function SettingsPage() {
     const id = newItem.id.trim() || newItem.name.trim();
     if (!id || !newItem.name.trim()) return;
     if (items.find((i) => i.id === id)) {
-      setImportMsg(`ID「${id}」はすでに存在します`);
+      setItemsMsg(`ID「${id}」はすでに存在します`);
       return;
     }
     const item: ItemMaster = {
@@ -432,6 +440,16 @@ export default function SettingsPage() {
     setItemsMsg(`「${item.name}」を追加しました`);
   };
 
+  const handleDeleteItem = (id: string) => {
+    const updated = items.filter(i => i.id !== id).map((item, idx) => ({ ...item, order: idx }));
+    saveItems(updated);
+    setItems(updated);
+    setOrigOrder(updated.map(i => i.id));
+    setDeleteConfirmId(null);
+    const name = items.find(i => i.id === id)?.name ?? id;
+    setItemsMsg(`「${name}」を削除しました`);
+  };
+
   return (
     <div className="max-w-md mx-auto min-h-screen bg-gray-50">
       <header className="bg-red-600 text-white px-4 pt-4 pb-3 sticky top-0 z-10 shadow-md">
@@ -442,6 +460,29 @@ export default function SettingsPage() {
           <h1 className="text-lg font-bold">設定</h1>
         </div>
       </header>
+
+      {/* 削除確認バー */}
+      {deleteConfirmId && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-3 sticky top-[56px] z-10">
+          <p className="text-sm font-medium text-red-800 mb-2">
+            「{items.find(i => i.id === deleteConfirmId)?.name}」を削除しますか？
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleDeleteItem(deleteConfirmId)}
+              className="flex-1 py-2 bg-red-600 text-white rounded-xl text-xs font-bold"
+            >
+              削除する
+            </button>
+            <button
+              onClick={() => setDeleteConfirmId(null)}
+              className="flex-1 py-2 bg-white border border-red-300 text-red-700 rounded-xl text-xs font-medium"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 並び替えモードOFF時の保存確認バー */}
       {showReorderConfirm && (
@@ -748,33 +789,25 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <label className="text-[11px] text-gray-500 font-medium">基準値 下限</label>
-                  <div className="flex gap-1 mt-0.5">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={newItem.rangeMin}
-                      onChange={(e) => setNewItem({ ...newItem, rangeMin: sanitizeNum(e.target.value) })}
-                      placeholder="—"
-                      className="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-                    />
-                    <button type="button" onClick={() => setNewItem({ ...newItem, rangeMin: newItem.rangeMin.includes(".") ? newItem.rangeMin : newItem.rangeMin + "." })}
-                      className="px-2 py-1.5 text-sm bg-white border border-gray-200 rounded-lg text-gray-500 font-mono shrink-0">.</button>
-                  </div>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={newItem.rangeMin}
+                    onChange={(e) => setNewItem({ ...newItem, rangeMin: sanitizeNum(e.target.value) })}
+                    placeholder="—"
+                    className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+                  />
                 </div>
                 <div>
                   <label className="text-[11px] text-gray-500 font-medium">基準値 上限</label>
-                  <div className="flex gap-1 mt-0.5">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={newItem.rangeMax}
-                      onChange={(e) => setNewItem({ ...newItem, rangeMax: sanitizeNum(e.target.value) })}
-                      placeholder="—"
-                      className="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
-                    />
-                    <button type="button" onClick={() => setNewItem({ ...newItem, rangeMax: newItem.rangeMax.includes(".") ? newItem.rangeMax : newItem.rangeMax + "." })}
-                      className="px-2 py-1.5 text-sm bg-white border border-gray-200 rounded-lg text-gray-500 font-mono shrink-0">.</button>
-                  </div>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={newItem.rangeMax}
+                    onChange={(e) => setNewItem({ ...newItem, rangeMax: sanitizeNum(e.target.value) })}
+                    placeholder="—"
+                    className="w-full mt-0.5 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:border-red-400 bg-white"
+                  />
                 </div>
               </div>
               <button
@@ -805,6 +838,7 @@ export default function SettingsPage() {
                 onSaveEdit={saveEdit}
                 onToggleVisibility={toggleItemVisibility}
                 onEditValuesChange={setEditValues}
+                onDeleteRequest={setDeleteConfirmId}
               />
             ))}
           </Reorder.Group>

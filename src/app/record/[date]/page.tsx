@@ -202,18 +202,21 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             <button
               onClick={() => prevRecord && router.replace(`/record/${prevRecord.date}`)}
               disabled={!prevRecord}
-              className="p-2 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
+              className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
               title={prevRecord?.date}
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={18} />
             </button>
             <button
-              onClick={() => nextRecord && router.replace(`/record/${nextRecord.date}`)}
-              disabled={!nextRecord}
-              className="p-2 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
-              title={nextRecord?.date}
+              onClick={() => {
+                const target = nextRecord ?? (allRecords.length > 1 ? allRecords[allRecords.length - 1] : null);
+                target && router.replace(`/record/${target.date}`);
+              }}
+              disabled={allRecords.length <= 1}
+              className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
+              title={nextRecord?.date ?? allRecords[allRecords.length - 1]?.date}
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={18} />
             </button>
           </div>
           <button

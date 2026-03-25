@@ -220,10 +220,13 @@ export default function ChartPage() {
               <ChevronLeft size={18} />
             </button>
             <button
-              onClick={() => nextItem && router.replace(`/chart/${nextItem.id}`)}
-              disabled={!nextItem}
+              onClick={() => {
+                const target = nextItem ?? (allItems.length > 1 ? allItems[0] : null);
+                target && router.replace(`/chart/${target.id}`);
+              }}
+              disabled={allItems.length <= 1}
               className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
-              title={nextItem?.name}
+              title={nextItem?.name ?? allItems[0]?.name}
             >
               <ChevronRight size={18} />
             </button>
