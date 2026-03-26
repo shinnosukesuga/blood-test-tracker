@@ -257,7 +257,7 @@ export default function ChartPage() {
             )}
             {change !== null && prevValue !== undefined && latestValue !== undefined && (
               <div className="relative">
-                <p className={`text-sm font-semibold inline-flex items-center gap-1 ${
+                <p className={`text-sm font-semibold inline-flex items-center gap-1 whitespace-nowrap ${
                   !settings.changeHighlight || Math.abs(change) <= CHANGE_THRESHOLD
                     ? "text-gray-800"
                     : change > 0 ? "text-red-500" : "text-blue-500"
