@@ -292,32 +292,31 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
       <main className="flex-1 pb-24">
         {/* 件数バー */}
         {record && (
-          <div className="bg-white border-b border-gray-100 px-4 py-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-600">
-                検索項目数: <b>{itemCount}</b>項目　閾値外: <b className={abnCount > 0 ? "text-red-600" : ""}>{abnCount}</b>項目　注目: <b>{requiredCount}</b>項目
-              </span>
-              {/* フィルターボタン */}
-              <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                <button
-                  onClick={() => setShowAbnOnly(v => !v)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition ${
-                    showAbnOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
-                  }`}
-                >
-                  <AlertCircle size={11} />
-                  閾値外
-                </button>
-                <button
-                  onClick={() => setShowRequiredOnly(v => !v)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition ${
-                    showRequiredOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
-                  }`}
-                >
-                  <Star size={11} className={showRequiredOnly ? "fill-yellow-400 text-yellow-400" : ""} />
-                  注目
-                </button>
-              </div>
+          <div className="bg-white border-b border-gray-100 px-4 pt-2 pb-1.5">
+            {/* 1行目: 件数 */}
+            <span className="text-xs text-gray-600">
+              検索項目数: <b>{itemCount}</b>項目　閾値外: <b className={abnCount > 0 ? "text-red-600" : ""}>{abnCount}</b>項目　注目: <b>{requiredCount}</b>項目
+            </span>
+            {/* 2行目: フィルターボタン */}
+            <div className="flex items-center gap-1.5 justify-end mt-1">
+              <button
+                onClick={() => setShowAbnOnly(v => !v)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition ${
+                  showAbnOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
+                }`}
+              >
+                <AlertCircle size={11} />
+                閾値外
+              </button>
+              <button
+                onClick={() => setShowRequiredOnly(v => !v)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition ${
+                  showRequiredOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
+                }`}
+              >
+                <Star size={11} className={showRequiredOnly ? "fill-yellow-400 text-yellow-400" : ""} />
+                注目
+              </button>
             </div>
           </div>
         )}

@@ -244,7 +244,7 @@ export default function ChartPage() {
           <p className="text-sm font-semibold text-gray-700">最新値 ({latestRecord?.date})</p>
           <div className="flex items-end justify-between mt-1">
             {latestValue !== undefined ? (
-              <p className={`text-3xl font-bold ${
+              <p className={`text-3xl font-bold whitespace-nowrap ${
                 getAbnormalType(item, latestValue) === "high" ? "text-red-600" :
                 getAbnormalType(item, latestValue) === "low"  ? "text-blue-600" :
                 "text-gray-800"
@@ -256,13 +256,20 @@ export default function ChartPage() {
               <p className="text-2xl font-bold text-gray-300">—</p>
             )}
             {change !== null && prevValue !== undefined && latestValue !== undefined && (
-              <div className="relative">
+              <div className="relative text-right">
+                <p className={`text-sm font-semibold whitespace-nowrap ${
+                  !settings.changeHighlight || Math.abs(change) <= CHANGE_THRESHOLD
+                    ? "text-gray-800"
+                    : change > 0 ? "text-red-500" : "text-blue-500"
+                }`}>
+                  前回比: {latestValue > prevValue ? "+" : "-"}{(() => { const d = Math.abs(latestValue - prevValue); return d < 0.1 ? d.toFixed(2) : d < 10 ? d.toFixed(1) : d.toFixed(0); })()} {item.unit}
+                </p>
                 <p className={`text-sm font-semibold inline-flex items-center gap-1 whitespace-nowrap ${
                   !settings.changeHighlight || Math.abs(change) <= CHANGE_THRESHOLD
                     ? "text-gray-800"
                     : change > 0 ? "text-red-500" : "text-blue-500"
                 }`}>
-                  前回比: {latestValue > prevValue ? "+" : "-"}{(() => { const d = Math.abs(latestValue - prevValue); return d < 0.1 ? d.toFixed(2) : d < 10 ? d.toFixed(1) : d.toFixed(0); })()} {item.unit}（{latestValue > prevValue ? "+" : "-"}{Math.abs(change).toFixed(1)}%）
+                  （{latestValue > prevValue ? "+" : "-"}{Math.abs(change).toFixed(1)}%）
                   <button
                     onClick={() => {
                       if (changeHelpTimerRef.current) clearTimeout(changeHelpTimerRef.current);
