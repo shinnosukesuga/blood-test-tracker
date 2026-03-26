@@ -280,28 +280,28 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
         {record && (
           <div className="bg-white border-b border-gray-100 px-4 pt-2 pb-1.5">
             {/* 1行目: 件数 */}
-            <span className="text-xs text-gray-600 block text-right">
+            <span className="text-xs text-gray-600 block text-center">
               検索項目数: <b>{itemCount}</b>項目　閾値外: <b className={abnCount > 0 ? "text-red-600" : ""}>{abnCount}</b>項目　注目: <b>{requiredCount}</b>項目
             </span>
             {/* 2行目: 削除・編集・フィルターボタン */}
-            <div className="flex items-center gap-1.5 justify-end mt-1">
+            <div className="flex items-center gap-1.5 mt-1">
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="flex items-center justify-center gap-1 w-20 py-1 rounded-full text-xs font-medium border transition bg-gray-50 text-red-500 border-gray-200 active:bg-red-50"
+                className="flex flex-1 items-center justify-center gap-1 py-1 rounded-full text-xs font-medium border transition bg-gray-50 text-red-500 border-gray-200 active:bg-red-50"
               >
                 <Trash2 size={11} />
                 削除
               </button>
               <button
                 onClick={openEdit}
-                className="flex items-center justify-center gap-1 w-20 py-1 rounded-full text-xs font-medium border transition bg-gray-50 text-gray-500 border-gray-200 active:bg-gray-100"
+                className="flex flex-1 items-center justify-center gap-1 py-1 rounded-full text-xs font-medium border transition bg-gray-50 text-gray-500 border-gray-200 active:bg-gray-100"
               >
                 <Pencil size={11} />
                 編集
               </button>
               <button
                 onClick={() => setShowAbnOnly(v => !v)}
-                className={`flex items-center justify-center gap-1 w-20 py-1 rounded-full text-xs font-medium border transition ${
+                className={`flex flex-1 items-center justify-center gap-1 py-1 rounded-full text-xs font-medium border transition ${
                   showAbnOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}
               >
@@ -310,7 +310,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
               </button>
               <button
                 onClick={() => setShowRequiredOnly(v => !v)}
-                className={`flex items-center justify-center gap-1 w-20 py-1 rounded-full text-xs font-medium border transition ${
+                className={`flex flex-1 items-center justify-center gap-1 py-1 rounded-full text-xs font-medium border transition ${
                   showRequiredOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}
               >
