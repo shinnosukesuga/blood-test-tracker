@@ -206,20 +206,6 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             <p className="text-red-200 text-[11px]">検査結果</p>
             <h1 className="text-base font-bold leading-tight truncate">{record ? fmtDay(record.date) : date}</h1>
           </div>
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="p-3 rounded-full bg-red-500 active:bg-red-700 transition shrink-0"
-            title="削除"
-          >
-            <Trash2 size={18} />
-          </button>
-          <button
-            onClick={openEdit}
-            className="p-3 rounded-full bg-red-500 active:bg-red-700 transition shrink-0"
-            title="編集"
-          >
-            <Pencil size={18} />
-          </button>
           {/* 前回・翌回ナビ */}
           <div className="flex items-center gap-1 shrink-0">
             <button
@@ -297,8 +283,22 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             <span className="text-xs text-gray-600 block text-right">
               検索項目数: <b>{itemCount}</b>項目　閾値外: <b className={abnCount > 0 ? "text-red-600" : ""}>{abnCount}</b>項目　注目: <b>{requiredCount}</b>項目
             </span>
-            {/* 2行目: フィルターボタン */}
+            {/* 2行目: 削除・編集・フィルターボタン */}
             <div className="flex items-center gap-1.5 justify-end mt-1">
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center justify-center gap-1 w-20 py-1 rounded-full text-xs font-medium border transition bg-gray-50 text-red-500 border-gray-200 active:bg-red-50"
+              >
+                <Trash2 size={11} />
+                削除
+              </button>
+              <button
+                onClick={openEdit}
+                className="flex items-center justify-center gap-1 w-20 py-1 rounded-full text-xs font-medium border transition bg-gray-50 text-gray-500 border-gray-200 active:bg-gray-100"
+              >
+                <Pencil size={11} />
+                編集
+              </button>
               <button
                 onClick={() => setShowAbnOnly(v => !v)}
                 className={`flex items-center justify-center gap-1 w-20 py-1 rounded-full text-xs font-medium border transition ${
