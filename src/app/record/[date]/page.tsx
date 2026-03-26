@@ -314,7 +314,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                 }`}
               >
                 <Star size={11} className={showRequiredOnly ? "fill-yellow-400 text-yellow-400" : ""} />
-                必須
+                注目
               </button>
             </div>
           </div>
