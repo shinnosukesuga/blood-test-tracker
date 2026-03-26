@@ -294,7 +294,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
         {record && (
           <div className="bg-white border-b border-gray-100 px-4 pt-2 pb-1.5">
             {/* 1行目: 件数 */}
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-gray-600 block text-right">
               検索項目数: <b>{itemCount}</b>項目　閾値外: <b className={abnCount > 0 ? "text-red-600" : ""}>{abnCount}</b>項目　注目: <b>{requiredCount}</b>項目
             </span>
             {/* 2行目: フィルターボタン */}
