@@ -301,7 +301,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             <div className="flex items-center gap-1.5 justify-end mt-1">
               <button
                 onClick={() => setShowAbnOnly(v => !v)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition ${
+                className={`flex items-center justify-center gap-1 w-20 py-1 rounded-full text-xs font-medium border transition ${
                   showAbnOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}
               >
@@ -310,7 +310,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
               </button>
               <button
                 onClick={() => setShowRequiredOnly(v => !v)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition ${
+                className={`flex items-center justify-center gap-1 w-20 py-1 rounded-full text-xs font-medium border transition ${
                   showRequiredOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}
               >
