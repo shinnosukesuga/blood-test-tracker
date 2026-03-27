@@ -614,7 +614,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                         <ChevronUp size={11} />先頭へ
                       </button>
                     </div>
-                  <div className="px-3 py-2 flex items-end gap-2">
+                  <div className="px-3 py-2 flex items-center gap-2">
                     <textarea
                       value={aiInput}
                       onChange={e => setAiInput(e.target.value)}
