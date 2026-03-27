@@ -534,23 +534,51 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                         }`}>
                           {msg.role === "user" ? (
                             <span className="whitespace-pre-wrap">{msg.content}</span>
-                          ) : (
-                            <ReactMarkdown
-                              allowedElements={["p", "strong", "em", "ul", "ol", "li", "br", "h3", "hr"]}
-                              unwrapDisallowed
-                              components={{
-                                p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
-                                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                                ul: ({ children }) => <ul className="list-disc list-inside space-y-0.5 my-1">{children}</ul>,
-                                ol: ({ children }) => <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>,
-                                li: ({ children }) => <li>{children}</li>,
-                                h3: ({ children }) => <h3 className="text-base font-bold text-gray-800 mt-3 mb-0.5 pt-2 border-t border-gray-300 first:mt-0 first:pt-0 first:border-t-0">{children}</h3>,
-                                hr: () => <hr className="border-t border-gray-300 my-2" />,
-                              }}
-                            >
-                              {msg.content}
-                            </ReactMarkdown>
-                          )}
+                          ) : (() => {
+                            try {
+                              const parsed = JSON.parse(msg.content);
+                              if (Array.isArray(parsed.insights)) {
+                                if (parsed.insights.length === 0) return <p className="text-gray-500">数値は安定している</p>;
+                                return (
+                                  <div className="space-y-3">
+                                    {parsed.insights.map((ins: { item: string; description: string; value: string; insight: string; recommendations?: string[] }, j: number) => (
+                                      <div key={j} className={j > 0 ? "pt-3 border-t border-gray-300" : ""}>
+                                        <p className="font-bold text-gray-800">■ {ins.item}</p>
+                                        <p className="text-xs text-gray-500">{ins.description}</p>
+                                        <p className="mt-0.5">{ins.value}</p>
+                                        <p className="text-gray-600">{ins.insight}</p>
+                                        {ins.recommendations && ins.recommendations.length > 0 && (
+                                          <div className="mt-1">
+                                            <p className="text-gray-500 text-xs">対策:</p>
+                                            <ul className="list-disc list-inside space-y-0.5">
+                                              {ins.recommendations.map((r: string, k: number) => <li key={k}>{r}</li>)}
+                                            </ul>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              }
+                            } catch {}
+                            return (
+                              <ReactMarkdown
+                                allowedElements={["p", "strong", "em", "ul", "ol", "li", "br", "h3", "hr"]}
+                                unwrapDisallowed
+                                components={{
+                                  p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                  ul: ({ children }) => <ul className="list-disc list-inside space-y-0.5 my-1">{children}</ul>,
+                                  ol: ({ children }) => <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>,
+                                  li: ({ children }) => <li>{children}</li>,
+                                  h3: ({ children }) => <h3 className="text-base font-bold text-gray-800 mt-3 mb-0.5 pt-2 border-t border-gray-300 first:mt-0 first:pt-0 first:border-t-0">{children}</h3>,
+                                  hr: () => <hr className="border-t border-gray-300 my-2" />,
+                                }}
+                              >
+                                {msg.content}
+                              </ReactMarkdown>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}
