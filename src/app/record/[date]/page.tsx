@@ -2,9 +2,8 @@
 
 import { use, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Settings, TrendingUp, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send, Star, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send, Star, AlertCircle } from "lucide-react";
 import { loadRecords, loadItems, saveRecord, deleteRecord, loadSettings, loadAIConversation, saveAIMessage } from "@/lib/firestoreStorage";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAbnormal } from "@/lib/itemMaster";
@@ -30,8 +29,13 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const [items,   setItems]   = useState<ItemMaster[]>([]);
   const [record,  setRecord]  = useState<BloodRecord | null>(null);
   const [allRecords, setAllRecords] = useState<BloodRecord[]>([]);
-  const [showAbnOnly, setShowAbnOnly] = useState(() => searchParams.get("abn") === "1");
-  const [showRequiredOnly, setShowRequiredOnly] = useState(() => searchParams.get("req") === "1");
+  const [showAbnOnly, setShowAbnOnly] = useState(false);
+  const [showRequiredOnly, setShowRequiredOnly] = useState(false);
+
+  useEffect(() => {
+    setShowAbnOnly(searchParams.get("abn") === "1");
+    setShowRequiredOnly(searchParams.get("req") === "1");
+  }, [searchParams]);
 
   // フィルター状態をURLパラメータで引き継ぐ
   const withFilter = useCallback((path: string) => {
@@ -545,19 +549,6 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
         )}
       </AnimatePresence>
 
-      {/* ボトムナビ */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-20">
-        <div className="max-w-md mx-auto flex">
-          <Link href="/" className="flex-1 flex flex-col items-center pt-2 pb-3 text-gray-400 hover:text-gray-600 transition">
-            <TrendingUp size={22} />
-            <span className="text-[10px] mt-0.5 font-medium">記録</span>
-          </Link>
-          <Link href="/settings" className="flex-1 flex flex-col items-center pt-2 pb-3 text-gray-400 hover:text-gray-600 transition">
-            <Settings size={22} />
-            <span className="text-[10px] mt-0.5 font-medium">設定</span>
-          </Link>
-        </div>
-      </nav>
     </div>
   );
 }
