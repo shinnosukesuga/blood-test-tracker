@@ -84,22 +84,39 @@ export async function POST(req: NextRequest) {
     ? filterTargetItems(currentRecord, previousRecord, items)
     : items;
 
+  const formatTargetValues = (itemList: ItemMaster[]) =>
+    itemList
+      .filter((i) => currentRecord.values[i.id] !== undefined)
+      .map((i) => {
+        const val = currentRecord.values[i.id];
+        const prevVal = previousRecord?.values[i.id];
+        const { min, max } = i.range;
+        const isOut = (max !== null && val > max) || (min !== null && val < min);
+        const nearTop = max !== null && val >= max * 0.9 && val <= max;
+        const nearBot = min !== null && min > 0 && val <= min * 1.1 && val >= min;
+        const tag = isOut ? "【閾値超過】" : nearTop ? "【上限付近】" : nearBot ? "【下限付近】" : "";
+        let changeStr = "";
+        if (prevVal !== undefined && prevVal !== 0) {
+          const pct = ((val - prevVal) / prevVal) * 100;
+          const sign = pct >= 0 ? "+" : "▲";
+          changeStr = ` ※前回${prevVal} ${i.unit}から${sign}${Math.abs(pct).toFixed(1)}%`;
+        }
+        return `${i.name}: ${val} ${i.unit}${changeStr} (基準: ${min ?? "-"}〜${max ?? "-"})${tag}`;
+      })
+      .join("\n");
+
   const formatValues = (values: Record<string, number>, itemList: ItemMaster[]) =>
     itemList
       .filter((i) => values[i.id] !== undefined)
       .map((i) => {
         const val = values[i.id];
         const { min, max } = i.range;
-        const isOut = (max !== null && val > max) || (min !== null && val < min);
-        const nearTop = max !== null && val >= max * 0.9 && val <= max;
-        const nearBot = min !== null && min > 0 && val <= min * 1.1 && val >= min;
-        const tag = isOut ? "【閾値超過】" : nearTop ? "【上限付近】" : nearBot ? "【下限付近】" : "";
-        return `${i.name}: ${val} ${i.unit} (基準: ${min ?? "-"}〜${max ?? "-"})${tag}`;
+        return `${i.name}: ${val} ${i.unit} (基準: ${min ?? "-"}〜${max ?? "-"})`;
       })
       .join("\n");
 
   const targetInfo = targetItems.length > 0
-    ? formatValues(currentRecord.values, targetItems)
+    ? formatTargetValues(targetItems)
     : "（注目すべき項目なし）";
 
   const prevInfo = previousRecord
@@ -128,7 +145,7 @@ ${seasonalContext || "（なし）"}
 - 季節傾向と比較して異常な変化があれば指摘
 
 ${userMessage === null ? `以下のJSON形式のみで返せ（テキストは一切出力しない）:
-{"insights":[{"item":"項目名","description":"何を測る指標か・役割を20〜30字程度の説明文で（例：血中の尿酸濃度を示す。高値は痛風リスクに繋がる）","value":"数値と前回比を「9 mm ※前回13 mmから▲23.1%」の形式で。増加は+x.x%、減少は▲x.x%、小数点第1位まで","insight":"時期・過去データを踏まえた示唆","recommendations":["対策1","対策2"]}]}
+{"insights":[{"item":"項目名","description":"何を測る指標か・役割を20〜30字程度の説明文で（例：血中の尿酸濃度を示す。高値は痛風リスクに繋がる）","value":"分析対象項目データに含まれている「数値 ※前回〜から±x.x%」の文字列をそのまま使う","insight":"時期・過去データを踏まえた示唆","recommendations":["対策1","対策2"]}]}
 
 ルール:
 - 対象項目がゼロの場合は {"insights":[]} を返す
