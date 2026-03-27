@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ChevronLeft, Check, X, Sparkles, AlertTriangle, Play, ImagePlus } from "lucide-react";
 import { GeminiScanResult, BloodRecord } from "@/lib/types";
-import { loadItems, saveRecord, generateId } from "@/lib/storage";
+import { loadItems, saveRecord, generateId, loadRecords, getPreviousRecord } from "@/lib/firestoreStorage";
+import { useAuth } from "@/contexts/AuthContext";
 import DatePicker from "@/components/DatePicker";
 import { scanImageWithGemini, fileToBase64, analyzeRecords } from "@/lib/gemini";
 import { findItem } from "@/lib/itemMaster";
-import { loadRecords, getPreviousRecord } from "@/lib/storage";
 import { sanitizeNum } from "@/lib/utils";
 
 // 入力フィールド（1項目）
@@ -25,6 +25,7 @@ interface ScanItem {
 
 export default function ScanPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<"upload" | "review" | "saving" | "done">("upload");
@@ -62,7 +63,8 @@ export default function ScanPage() {
     setScanProgress({ current: 0, total: stagedFiles.length });
 
     try {
-      const items = loadItems();
+      if (!user) return;
+      const items = await loadItems(user.uid);
       const mergedMap = new Map<string, ScanItem>();
       let detectedDate: string | null = null;
 
@@ -136,12 +138,13 @@ export default function ScanPage() {
       createdAt: new Date().toISOString(),
     };
 
-    saveRecord(record);
+    if (!user) { setStep("upload"); return; }
+    await saveRecord(user.uid, record);
 
     // AI 分析
     try {
-      const items = loadItems();
-      const prev = getPreviousRecord(scanDate);
+      const items = await loadItems(user.uid);
+      const prev = await getPreviousRecord(user.uid, scanDate);
       const analysis = await analyzeRecords(record, prev, items);
       if (analysis.hasSignificantChanges) {
         setAiAnalysis(

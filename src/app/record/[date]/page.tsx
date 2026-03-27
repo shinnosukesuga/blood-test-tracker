@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Settings, TrendingUp, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send, Star, AlertCircle } from "lucide-react";
-import { loadRecords, loadItems, saveRecord, deleteRecord, loadSettings, loadAIConversation, saveAIMessage } from "@/lib/storage";
+import { loadRecords, loadItems, saveRecord, deleteRecord, loadSettings, loadAIConversation, saveAIMessage } from "@/lib/firestoreStorage";
+import { useAuth } from "@/contexts/AuthContext";
 import { isAbnormal } from "@/lib/itemMaster";
 import { BloodRecord, ItemMaster, AIMessage } from "@/lib/types";
 import { analyzeWithContext } from "@/lib/gemini";
@@ -24,6 +25,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const { date } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
 
   const [items,   setItems]   = useState<ItemMaster[]>([]);
   const [record,  setRecord]  = useState<BloodRecord | null>(null);
@@ -55,25 +57,28 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const [confirmDelete,   setConfirmDelete]   = useState(false);
 
   useEffect(() => {
-    const allItems = loadItems();
-    setItems(allItems);
-    const records = loadRecords();
-    setAllRecords(records);
-    const rec = records.find(r => r.date === date) ?? null;
-    setRecord(rec);
-    if (rec) {
-      const conv = loadAIConversation(rec.id);
-      if (conv) setAiMessages(conv.messages);
-    }
-  }, [date]);
+    if (!user) { router.push("/login"); return; }
+    const load = async () => {
+      const [allItems, records] = await Promise.all([loadItems(user.uid), loadRecords(user.uid)]);
+      setItems(allItems);
+      setAllRecords(records);
+      const rec = records.find(r => r.date === date) ?? null;
+      setRecord(rec);
+      if (rec) {
+        const conv = await loadAIConversation(user.uid, rec.id);
+        if (conv) setAiMessages(conv.messages);
+      }
+    };
+    load();
+  }, [date, user, router]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [aiMessages]);
 
   const handleAiAnalyze = async (userMsg: string | null = null) => {
-    if (!record) return;
-    const settings = loadSettings();
+    if (!record || !user) return;
+    const settings = await loadSettings(user.uid);
     setAiError("");
     setAiLoading(true);
 
@@ -81,7 +86,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
     let history = [...aiMessages];
     if (userMsg) {
       const userMessage: AIMessage = { role: "user", content: userMsg, createdAt: new Date().toISOString() };
-      saveAIMessage(record.id, userMessage);
+      await saveAIMessage(user.uid, record.id, userMessage);
       history = [...history, userMessage];
       setAiMessages(history);
       setAiInput("");
@@ -103,7 +108,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
       );
 
       const aiMessage: AIMessage = { role: "ai", content: aiText, createdAt: new Date().toISOString() };
-      saveAIMessage(record.id, aiMessage);
+      await saveAIMessage(user.uid, record.id, aiMessage);
       setAiMessages(prev => [...prev, aiMessage]);
     } catch (e) {
       setAiError(`AI分析エラー: ${e}`);
@@ -134,23 +139,18 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
     return false;
   };
 
-  const handleEditSave = () => {
-    if (!record || !editDate) return;
+  const handleEditSave = async () => {
+    if (!record || !editDate || !user) return;
     const values: Record<string, number> = {};
     for (const [k, v] of Object.entries(editValues)) {
       const n = parseFloat(v);
       if (!isNaN(n)) values[k] = n;
     }
-    // 日付が変わった場合は古いレコードを削除して新しいIDで保存
-    const updatedRecord: BloodRecord = {
-      ...record,
-      date: editDate,
-      values,
-    };
+    const updatedRecord: BloodRecord = { ...record, date: editDate, values };
     if (editDate !== record.date) {
-      deleteRecord(record.id);
+      await deleteRecord(user.uid, record.id);
     }
-    saveRecord(updatedRecord);
+    await saveRecord(user.uid, updatedRecord);
     setRecord(updatedRecord);
     setEditing(false);
     if (editDate !== date) {
@@ -158,9 +158,9 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
     }
   };
 
-  const handleDelete = () => {
-    if (!record) return;
-    deleteRecord(record.id);
+  const handleDelete = async () => {
+    if (!record || !user) return;
+    await deleteRecord(user.uid, record.id);
     router.replace("/");
   };
 

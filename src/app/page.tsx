@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Settings, Plus, ChevronRight, TrendingUp, Check, X, PenLine, Trash2, AlertTriangle } from "lucide-react";
-import { loadRecords, saveRecord, loadItems, generateId, deleteRecord } from "@/lib/storage";
+import { loadRecords, saveRecord, loadItems, generateId, deleteRecord, migrateFromLocalStorage } from "@/lib/firestoreStorage";
+import { useAuth } from "@/contexts/AuthContext";
 import { isAbnormal } from "@/lib/itemMaster";
 import { BloodRecord, ItemMaster } from "@/lib/types";
 import DatePicker from "@/components/DatePicker";
@@ -20,6 +21,7 @@ function formatDateWithDay(dateStr: string) {
 
 export default function HomePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [records, setRecords] = useState<BloodRecord[]>([]);
   const [items,   setItems]   = useState<ItemMaster[]>([]);
   const [selYear,  setSelYear]  = useState<string>("すべて");
@@ -47,12 +49,15 @@ export default function HomePage() {
     });
   };
 
-  const handleDeleteConfirmed = () => {
-    selectedDates.forEach(date => {
-      const rec = records.find(r => r.date === date);
-      if (rec) deleteRecord(rec.id);
-    });
-    setRecords(loadRecords());
+  const handleDeleteConfirmed = async () => {
+    if (!user) return;
+    await Promise.all(
+      Array.from(selectedDates).map(date => {
+        const rec = records.find(r => r.date === date);
+        return rec ? deleteRecord(user.uid, rec.id) : Promise.resolve();
+      })
+    );
+    setRecords(await loadRecords(user.uid));
     setDeleteMode(false);
     setSelectedDates(new Set());
     setConfirmDelete(false);
@@ -65,9 +70,15 @@ export default function HomePage() {
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
-    setRecords(loadRecords());
-    setItems(loadItems());
-  }, []);
+    if (!user) { router.push("/login"); return; }
+    const init = async () => {
+      await migrateFromLocalStorage(user.uid);
+      const [recs, itms] = await Promise.all([loadRecords(user.uid), loadItems(user.uid)]);
+      setRecords(recs);
+      setItems(itms);
+    };
+    init();
+  }, [user, router]);
 
   // 年リスト（データから生成）
   const years = useMemo(() => {
@@ -102,16 +113,16 @@ export default function HomePage() {
     setNewOpen(true);
   };
 
-  const handleNewSave = () => {
-    if (!newDate) return;
+  const handleNewSave = async () => {
+    if (!newDate || !user) return;
     const values: Record<string, number> = {};
     for (const [k, v] of Object.entries(newVals)) {
       const n = parseFloat(v);
       if (!isNaN(n)) values[k] = n;
     }
     const record: BloodRecord = { id: generateId(), date: newDate, values, note: "", createdAt: new Date().toISOString() };
-    saveRecord(record);
-    setRecords(loadRecords());
+    await saveRecord(user.uid, record);
+    setRecords(await loadRecords(user.uid));
     setNewOpen(false);
     router.push(`/record/${newDate}`);
   };

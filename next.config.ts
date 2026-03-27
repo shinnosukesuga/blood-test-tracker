@@ -28,7 +28,8 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-inline/eval in dev
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' blob: data:",
-      "connect-src 'self' https://generativelanguage.googleapis.com",
+      "connect-src 'self' https://generativelanguage.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://*.firestore.googleapis.com wss://*.firebaseio.com",
+      "frame-src 'self' https://my-bloodtesttracker-app.firebaseapp.com https://accounts.google.com",
       "font-src 'self'",
       "object-src 'none'",
       "base-uri 'self'",

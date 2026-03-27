@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Reorder, useDragControls } from "framer-motion";
 import { ChevronLeft, Save, Trash2, Plus, X, GripVertical, FileDown, FileUp, Pencil } from "lucide-react";
-import { loadSettings, saveSettings, importJSON, loadItems, saveItems, loadRecords, generateId, resetItemOrder, exportJSON } from "@/lib/storage";
+import { loadSettings, saveSettings, importJSON, loadItems, saveItems, loadRecords, generateId, resetItemOrder, exportJSON, saveRecord } from "@/lib/firestoreStorage";
+import { useAuth } from "@/contexts/AuthContext";
 import { exportToCSV, parseCSV, downloadFile } from "@/lib/csvParser";
 import { AppSettings, ItemMaster } from "@/lib/types";
 import { sanitizeNum } from "@/lib/utils";
@@ -201,6 +202,7 @@ function SortableItemRow({
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [settings, setSettings] = useState<AppSettings>({ defaultView: "list", changeHighlight: true, changeThreshold: 10, aiSeasonalYears: 2, aiRecentRecords: 3 });
   const [saved, setSaved] = useState(false);
   const [importMsg, setImportMsg] = useState("");
@@ -224,11 +226,15 @@ export default function SettingsPage() {
   const dataHelpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setSettings(loadSettings());
-    const loaded = loadItems();
-    setItems(loaded);
-    setOrigOrder(loaded.map(i => i.id));
-  }, []);
+    if (!user) { router.push("/login"); return; }
+    const load = async () => {
+      const [stgs, loaded] = await Promise.all([loadSettings(user.uid), loadItems(user.uid)]);
+      setSettings(stgs);
+      setItems(loaded);
+      setOrigOrder(loaded.map(i => i.id));
+    };
+    load();
+  }, [user, router]);
 
   const isOrderChanged = () => {
     const current = items.map(i => i.id);
@@ -248,37 +254,41 @@ export default function SettingsPage() {
     router.push("/");
   };
 
-  const handleBackRestore = () => {
+  const handleBackRestore = async () => {
+    if (!user) return;
     const restored = [...items].sort((a, b) => origOrder.indexOf(a.id) - origOrder.indexOf(b.id))
       .map((item, idx) => ({ ...item, order: idx }));
-    saveItems(restored);
+    await saveItems(user.uid, restored);
     setShowBackConfirm(false);
     router.push("/");
   };
 
-  const handleSave = () => {
-    saveSettings(settings);
+  const handleSave = async () => {
+    if (!user) return;
+    await saveSettings(user.uid, settings);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleJSONImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) return;
     const file = e.target.files?.[0];
     if (!file) return;
     const text = await file.text();
-    const result = importJSON(text);
+    const result = await importJSON(user.uid, text);
     setImportMsg(result.message);
-    if (result.success) setItems(loadItems());
+    if (result.success) setItems(await loadItems(user.uid));
     e.target.value = "";
   };
 
   const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) return;
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       const text = await file.text();
       const result = parseCSV(text);
-      const currentItems = loadItems();
+      const currentItems = await loadItems(user.uid);
       const itemsById = new Map(currentItems.map((i) => [i.id, i]));
       const maxOrder = currentItems.reduce((m, i) => Math.max(m, i.order), -1);
       let nextOrder = maxOrder + 1;
@@ -300,13 +310,12 @@ export default function SettingsPage() {
         }
       }
       const updatedItems = Array.from(itemsById.values()).sort((a, b) => a.order - b.order);
-      saveItems(updatedItems);
+      await saveItems(user.uid, updatedItems);
       setItems(updatedItems);
-      const { saveRecord, loadRecords: lr } = await import("@/lib/storage");
-      const existing = lr();
+      const existing = await loadRecords(user.uid);
       const existingDates = new Set(existing.map((r) => r.date));
       const newRecords = result.records.filter((r) => !existingDates.has(r.date)).map((r) => ({ ...r, values: Object.fromEntries(Object.entries(r.values).map(([id, val]) => [csvIdToCanonicalId.get(id) ?? id, val])) }));
-      for (const r of newRecords) saveRecord(r);
+      for (const r of newRecords) await saveRecord(user.uid, r);
       const skipped = result.records.length - newRecords.length;
       setImportMsg(`インポート完了: ${newRecords.length}件追加・${skipped}件重複スキップ（CSV解析: ${result.records.length}件）`);
     } catch (err) {
@@ -315,21 +324,24 @@ export default function SettingsPage() {
     e.target.value = "";
   };
 
-  const handleCSVExport = () => {
-    const records = loadRecords();
+  const handleCSVExport = async () => {
+    if (!user) return;
+    const records = await loadRecords(user.uid);
     const csv = exportToCSV(records, items);
     const now = new Date().toISOString().slice(0, 10);
     downloadFile(csv, `bloodtrack_${now}.csv`, "text/csv;charset=utf-8");
   };
 
-  const handleJSONExport = () => {
-    const json = exportJSON();
+  const handleJSONExport = async () => {
+    if (!user) return;
+    const json = await exportJSON(user.uid);
     const now = new Date().toISOString().slice(0, 10);
     downloadFile(json, `bloodtrack_backup_${now}.json`, "application/json");
   };
 
-  const handleResetOrder = () => {
-    const updated = resetItemOrder();
+  const handleResetOrder = async () => {
+    if (!user) return;
+    const updated = await resetItemOrder(user.uid);
     setItems(updated);
     setImportMsg("並び順をデフォルトにリセットしました");
   };
@@ -360,8 +372,9 @@ export default function SettingsPage() {
     }
   };
 
-  const handleReorderSave = () => {
-    saveItems(items);
+  const handleReorderSave = async () => {
+    if (!user) return;
+    await saveItems(user.uid, items);
     setOrigOrder(items.map(i => i.id));
     setShowReorderConfirm(false);
     setReorderMode(false);
@@ -383,10 +396,11 @@ export default function SettingsPage() {
     userDraggedRef.current = false;
   };
 
-  const toggleItemVisibility = (id: string) => {
+  const toggleItemVisibility = async (id: string) => {
+    if (!user) return;
     const updated = items.map((i) => (i.id === id ? { ...i, visible: !i.visible } : i));
     setItems(updated);
-    saveItems(updated);
+    await saveItems(user.uid, updated);
   };
 
   const startEdit = (item: ItemMaster) => {
@@ -408,7 +422,8 @@ export default function SettingsPage() {
     });
   };
 
-  const saveEdit = (id: string) => {
+  const saveEdit = async (id: string) => {
+    if (!user) return;
     const updated = items.map((i) => {
       if (i.id !== id) return i;
       // aliasesの英字略称部分だけ差し替え、日本語エイリアスは保持
@@ -431,12 +446,13 @@ export default function SettingsPage() {
       };
     });
     setItems(updated);
-    saveItems(updated);
+    await saveItems(user.uid, updated);
     setEditingId(null);
     setItemsMsg("更新しました");
   };
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
+    if (!user) return;
     const id = newItem.id.trim() || newItem.name.trim();
     if (!id || !newItem.name.trim()) return;
     if (items.find((i) => i.id === id)) {
@@ -456,7 +472,7 @@ export default function SettingsPage() {
       visible: true,
     };
     const updated = [...items, item];
-    saveItems(updated);
+    await saveItems(user.uid, updated);
     setItems(updated);
     setOrigOrder(updated.map(i => i.id));
     setNewItem(EMPTY_NEW_ITEM);
@@ -472,10 +488,11 @@ export default function SettingsPage() {
     });
   };
 
-  const handleDeleteExecute = () => {
+  const handleDeleteExecute = async () => {
+    if (!user) return;
     const ids = selectedDeleteIds;
     const updated = items.filter(i => !ids.has(i.id)).map((item, idx) => ({ ...item, order: idx }));
-    saveItems(updated);
+    await saveItems(user.uid, updated);
     setItems(updated);
     setOrigOrder(updated.map(i => i.id));
     setSelectedDeleteIds(new Set());

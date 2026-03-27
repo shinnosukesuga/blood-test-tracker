@@ -15,8 +15,9 @@ import {
   ReferenceArea,
   ResponsiveContainer,
 } from "recharts";
-import { ItemMaster, BloodRecord } from "@/lib/types";
-import { loadItems, loadRecords, loadSettings } from "@/lib/storage";
+import { ItemMaster, BloodRecord, AppSettings } from "@/lib/types";
+import { loadItems, loadRecords, loadSettings } from "@/lib/firestoreStorage";
+import { useAuth } from "@/contexts/AuthContext";
 import { isAbnormal, getAbnormalType } from "@/lib/itemMaster";
 
 // 年ごとの色
@@ -69,9 +70,15 @@ function CustomDot({
   );
 }
 
+const DEFAULT_SETTINGS: AppSettings = {
+  defaultView: "list", changeHighlight: true, changeThreshold: 10,
+  aiSeasonalYears: 2, aiRecentRecords: 3,
+};
+
 export default function ChartPage() {
   const { itemId } = useParams<{ itemId: string }>();
   const router = useRouter();
+  const { user } = useAuth();
 
   const [item, setItem] = useState<ItemMaster | null>(null);
   const [allItems, setAllItems] = useState<ItemMaster[]>([]);
@@ -118,20 +125,29 @@ export default function ChartPage() {
 
   const [showChangeHelp, setShowChangeHelp] = useState(false);
   const changeHelpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [settings, setSettings] = useState(() => loadSettings());
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
-    const items = loadItems().filter((i) => i.visible).sort((a, b) => a.order - b.order);
-    const found = items.find((i) => i.id === itemId);
-    setItem(found ?? null);
-    setAllItems(items);
-    setRecords(loadRecords());
-    setSettings(loadSettings());
-    try {
-      const raw = localStorage.getItem(`item_memo_${itemId}`);
-      setMemoEntries(raw ? JSON.parse(raw) : []);
-    } catch { setMemoEntries([]); }
-  }, [itemId]);
+    if (!user) return;
+    const load = async () => {
+      const [allItms, recs, stgs] = await Promise.all([
+        loadItems(user.uid),
+        loadRecords(user.uid),
+        loadSettings(user.uid),
+      ]);
+      const visible = allItms.filter((i) => i.visible).sort((a, b) => a.order - b.order);
+      const found = visible.find((i) => i.id === itemId);
+      setItem(found ?? null);
+      setAllItems(visible);
+      setRecords(recs);
+      setSettings(stgs);
+      try {
+        const raw = localStorage.getItem(`item_memo_${itemId}`);
+        setMemoEntries(raw ? JSON.parse(raw) : []);
+      } catch { setMemoEntries([]); }
+    };
+    load();
+  }, [itemId, user]);
 
   const currentIdx = allItems.findIndex((i) => i.id === itemId);
   const prevItem = currentIdx > 0 ? allItems[currentIdx - 1] : null;
