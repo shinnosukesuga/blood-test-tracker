@@ -391,15 +391,6 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                     <h2 className="text-sm font-semibold text-gray-700">AI分析</h2>
                   </div>
                   <div className="flex items-center gap-2">
-                    {needsScroll && (
-                      <button
-                        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                        className="flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
-                      >
-                        <ChevronUp size={11} />
-                        先頭へ
-                      </button>
-                    )}
                     {aiMessages.length === 0 && (
                       <button
                         onClick={() => handleAiAnalyze(null)}
@@ -408,6 +399,15 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                       >
                         <Sparkles size={12} />
                         {aiLoading ? "分析中..." : "この記録を分析する"}
+                      </button>
+                    )}
+                    {needsScroll && (
+                      <button
+                        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                        className="flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
+                      >
+                        <ChevronUp size={11} />
+                        先頭へ
                       </button>
                     )}
                   </div>
