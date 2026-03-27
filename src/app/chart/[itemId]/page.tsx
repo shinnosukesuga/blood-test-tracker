@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -78,12 +78,15 @@ const DEFAULT_SETTINGS: AppSettings = {
 export default function ChartPage() {
   const { itemId } = useParams<{ itemId: string }>();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user } = useAuth();
 
   // フィルター済み項目IDリスト（recordページから渡される）
-  const filteredIdsParam = searchParams.get("items");
-  const filteredIds = filteredIdsParam ? filteredIdsParam.split(",") : null;
+  const [filteredIds, setFilteredIds] = useState<string[] | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const items = params.get("items");
+    setFilteredIds(items ? items.split(",") : null);
+  }, [itemId]);
 
   const [item, setItem] = useState<ItemMaster | null>(null);
   const [allItems, setAllItems] = useState<ItemMaster[]>([]);
