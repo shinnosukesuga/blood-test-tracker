@@ -193,10 +193,17 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
 
   // フィルター結果が1ページに収まるか判定
   useEffect(() => {
-    const check = () => setNeedsScroll(document.documentElement.scrollHeight > window.innerHeight + 10);
-    check();
+    const check = () => {
+      if (!aiSectionRef.current) return;
+      const top = aiSectionRef.current.getBoundingClientRect().top;
+      setNeedsScroll(top > window.innerHeight - 10);
+    };
+    const raf = requestAnimationFrame(check);
     window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", check);
+    };
   }, [filteredItems]);
 
   const itemCount      = record ? Object.keys(record.values).length : 0;
@@ -375,19 +382,6 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
               filteredIds={filteredItems.map(i => i.id)}
             />
 
-            {/* 先頭に戻るボタン */}
-            {needsScroll && (
-              <div className="flex justify-center py-3 bg-gray-100 border-t-2 border-gray-200">
-                <button
-                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                  className="flex items-center gap-1 text-xs text-gray-500 font-medium"
-                >
-                  <ChevronUp size={14} />
-                  先頭へ
-                </button>
-              </div>
-            )}
-
             {/* AI チャットセクション */}
             <div ref={aiSectionRef} className="mt-0 mb-2">
               <div className="bg-white border-t-2 border-red-100 overflow-hidden">
@@ -396,16 +390,27 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                     <Sparkles size={15} className="text-red-500" />
                     <h2 className="text-sm font-semibold text-gray-700">AI分析</h2>
                   </div>
-                  {aiMessages.length === 0 && (
-                    <button
-                      onClick={() => handleAiAnalyze(null)}
-                      disabled={aiLoading}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-full disabled:opacity-50"
-                    >
-                      <Sparkles size={12} />
-                      {aiLoading ? "分析中..." : "この記録を分析する"}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {needsScroll && (
+                      <button
+                        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                        className="flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
+                      >
+                        <ChevronUp size={11} />
+                        先頭へ
+                      </button>
+                    )}
+                    {aiMessages.length === 0 && (
+                      <button
+                        onClick={() => handleAiAnalyze(null)}
+                        disabled={aiLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-full disabled:opacity-50"
+                      >
+                        <Sparkles size={12} />
+                        {aiLoading ? "分析中..." : "この記録を分析する"}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* 会話履歴 */}
