@@ -504,7 +504,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
 
                 {/* 会話履歴 */}
                 {aiMessages.length > 0 && (
-                  <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+                  <div className="p-4 space-y-3">
                     {aiMessages.map((msg, i) => (
                       <div
                         key={i}
