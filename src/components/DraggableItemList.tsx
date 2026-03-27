@@ -42,7 +42,7 @@ function ItemRow({ item, value, filteredIds }: { item: ItemMaster; value: number
 
   const abbr = getCsvAbbr(item);
 
-  const chartHref = filteredIds && filteredIds.length > 1
+  const chartHref = filteredIds && filteredIds.length > 0
     ? `/chart/${item.id}?items=${filteredIds.join(",")}`
     : `/chart/${item.id}`;
 
