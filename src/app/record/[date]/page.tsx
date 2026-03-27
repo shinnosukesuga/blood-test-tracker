@@ -436,7 +436,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             />
 
             {/* AI チャットセクション */}
-            <div ref={aiSectionRef} className="mt-0 mb-2">
+            <div ref={aiSectionRef} className="mt-0 mb-2 scroll-mt-[120px]">
               <div className="bg-white border-t-2 border-red-100 overflow-hidden">
                 <div className="px-4 pt-3 pb-2 border-b border-gray-100 bg-gray-50">
                   {/* タイトル行 */}
