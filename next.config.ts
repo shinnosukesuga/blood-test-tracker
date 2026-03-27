@@ -25,11 +25,11 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-inline/eval in dev
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' blob: data:",
-      "connect-src 'self' https://generativelanguage.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://*.firestore.googleapis.com wss://*.firebaseio.com",
-      "frame-src 'self' https://my-bloodtesttracker-app.firebaseapp.com https://accounts.google.com",
+      "img-src 'self' blob: data: https://*.googleusercontent.com",
+      "connect-src 'self' https://generativelanguage.googleapis.com https://*.googleapis.com https://*.firebaseio.com https://*.firestore.googleapis.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com",
+      "frame-src 'self' https://my-bloodtesttracker-app.firebaseapp.com https://accounts.google.com https://*.firebaseapp.com",
       "font-src 'self'",
       "object-src 'none'",
       "base-uri 'self'",
