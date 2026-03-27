@@ -9,6 +9,7 @@ interface Props {
   items: ItemMaster[];
   record: BloodRecord | null;
   onReorder: (items: ItemMaster[]) => void;
+  filteredIds?: string[];
 }
 
 // CSVの略称: 日本語でなく項目名と異なるaliasのうち最短のものを表示
@@ -27,7 +28,7 @@ function rangeText(item: ItemMaster): string {
   return "";
 }
 
-function ItemRow({ item, value }: { item: ItemMaster; value: number | undefined }) {
+function ItemRow({ item, value, filteredIds }: { item: ItemMaster; value: number | undefined; filteredIds?: string[] }) {
   const abnType = value !== undefined ? getAbnormalType(item, value) : "normal";
   const isHigh = abnType === "high";
   const isLow  = abnType === "low";
@@ -41,9 +42,13 @@ function ItemRow({ item, value }: { item: ItemMaster; value: number | undefined 
 
   const abbr = getCsvAbbr(item);
 
+  const chartHref = filteredIds && filteredIds.length > 1
+    ? `/chart/${item.id}?items=${filteredIds.join(",")}`
+    : `/chart/${item.id}`;
+
   return (
     <Link
-      href={`/chart/${item.id}`}
+      href={chartHref}
       className={`flex items-center px-4 py-2.5 border-b border-gray-100 active:opacity-70 transition-opacity ${bgCls}`}
     >
       <div className="flex-1 min-w-0">
@@ -73,11 +78,11 @@ function ItemRow({ item, value }: { item: ItemMaster; value: number | undefined 
   );
 }
 
-export default function DraggableItemList({ items, record }: Props) {
+export default function DraggableItemList({ items, record, filteredIds }: Props) {
   return (
     <div className="bg-white">
       {items.map((item) => (
-        <ItemRow key={item.id} item={item} value={record?.values[item.id]} />
+        <ItemRow key={item.id} item={item} value={record?.values[item.id]} filteredIds={filteredIds} />
       ))}
     </div>
   );

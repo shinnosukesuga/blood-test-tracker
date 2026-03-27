@@ -345,6 +345,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
               items={filteredItems}
               record={record}
               onReorder={handleReorder}
+              filteredIds={filteredItems.map(i => i.id)}
             />
 
             {/* AI チャットセクション */}

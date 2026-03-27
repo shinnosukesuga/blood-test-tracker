@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -78,7 +78,12 @@ const DEFAULT_SETTINGS: AppSettings = {
 export default function ChartPage() {
   const { itemId } = useParams<{ itemId: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
+
+  // フィルター済み項目IDリスト（recordページから渡される）
+  const filteredIdsParam = searchParams.get("items");
+  const filteredIds = filteredIdsParam ? filteredIdsParam.split(",") : null;
 
   const [item, setItem] = useState<ItemMaster | null>(null);
   const [allItems, setAllItems] = useState<ItemMaster[]>([]);
@@ -149,9 +154,15 @@ export default function ChartPage() {
     load();
   }, [itemId, user]);
 
-  const currentIdx = allItems.findIndex((i) => i.id === itemId);
-  const prevItem = currentIdx > 0 ? allItems[currentIdx - 1] : null;
-  const nextItem = currentIdx < allItems.length - 1 ? allItems[currentIdx + 1] : null;
+  // フィルター済みIDがあればその順序で、なければ全項目でナビゲーション
+  const navItems = filteredIds
+    ? allItems.filter(i => filteredIds.includes(i.id)).sort((a, b) => filteredIds.indexOf(a.id) - filteredIds.indexOf(b.id))
+    : allItems;
+  const itemsParam = filteredIds ? `?items=${filteredIds.join(",")}` : "";
+
+  const currentIdx = navItems.findIndex((i) => i.id === itemId);
+  const prevItem = currentIdx > 0 ? navItems[currentIdx - 1] : null;
+  const nextItem = currentIdx < navItems.length - 1 ? navItems[currentIdx + 1] : null;
 
   const { data, years } = item ? buildChartData(records, itemId) : { data: [], years: [] };
 
@@ -230,23 +241,23 @@ export default function ChartPage() {
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => {
-                const target = prevItem ?? (allItems.length > 1 ? allItems[allItems.length - 1] : null);
-                target && router.replace(`/chart/${target.id}`);
+                const target = prevItem ?? (navItems.length > 1 ? navItems[navItems.length - 1] : null);
+                target && router.replace(`/chart/${target.id}${itemsParam}`);
               }}
-              disabled={allItems.length <= 1}
+              disabled={navItems.length <= 1}
               className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
-              title={prevItem?.name ?? allItems[allItems.length - 1]?.name}
+              title={prevItem?.name ?? navItems[navItems.length - 1]?.name}
             >
               <ChevronLeft size={18} />
             </button>
             <button
               onClick={() => {
-                const target = nextItem ?? (allItems.length > 1 ? allItems[0] : null);
-                target && router.replace(`/chart/${target.id}`);
+                const target = nextItem ?? (navItems.length > 1 ? navItems[0] : null);
+                target && router.replace(`/chart/${target.id}${itemsParam}`);
               }}
-              disabled={allItems.length <= 1}
+              disabled={navItems.length <= 1}
               className="p-3 rounded-full bg-red-500 disabled:opacity-30 active:bg-red-700 transition-colors"
-              title={nextItem?.name ?? allItems[0]?.name}
+              title={nextItem?.name ?? navItems[0]?.name}
             >
               <ChevronRight size={18} />
             </button>
