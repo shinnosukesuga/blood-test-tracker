@@ -385,13 +385,26 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             {/* AI チャットセクション */}
             <div ref={aiSectionRef} className="mt-0 mb-2">
               <div className="bg-white border-t-2 border-red-100 overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={15} className="text-red-500" />
-                    <h2 className="text-sm font-semibold text-gray-700">AI分析</h2>
+                <div className="px-4 pt-3 pb-2 border-b border-gray-100 bg-gray-50">
+                  {/* タイトル行: 中央寄せ + 先頭へ右端 */}
+                  <div className="relative flex items-center justify-center">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={16} className="text-red-500" />
+                      <h2 className="text-base font-semibold text-gray-700">AI分析</h2>
+                    </div>
+                    {needsScroll && (
+                      <button
+                        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                        className="absolute right-0 flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
+                      >
+                        <ChevronUp size={11} />
+                        先頭へ
+                      </button>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {aiMessages.length === 0 && (
+                  {/* この記録を分析するボタン: 中央寄せ */}
+                  {aiMessages.length === 0 && (
+                    <div className="flex justify-center mt-2">
                       <button
                         onClick={() => handleAiAnalyze(null)}
                         disabled={aiLoading}
@@ -400,17 +413,8 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                         <Sparkles size={12} />
                         {aiLoading ? "分析中..." : "この記録を分析する"}
                       </button>
-                    )}
-                    {needsScroll && (
-                      <button
-                        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                        className="flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
-                      >
-                        <ChevronUp size={11} />
-                        先頭へ
-                      </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 会話履歴 */}
