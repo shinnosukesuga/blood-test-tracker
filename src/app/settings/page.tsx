@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Reorder, useDragControls } from "framer-motion";
 import { ChevronLeft, Save, Trash2, Plus, X, GripVertical, FileDown, FileUp, Pencil } from "lucide-react";
-import { loadSettings, saveSettings, importJSON, loadItems, saveItems, loadRecords, generateId, resetItemOrder, exportJSON, saveRecord } from "@/lib/firestoreStorage";
+import { loadSettings, saveSettings, importJSON, loadItems, saveItems, loadRecords, generateId, resetItemOrder, exportJSON } from "@/lib/firestoreStorage";
 import { useAuth } from "@/contexts/AuthContext";
-import { exportToCSV, parseCSV, downloadFile } from "@/lib/csvParser";
+import { exportToCSV, downloadFile } from "@/lib/csvParser";
 import { AppSettings, ItemMaster } from "@/lib/types";
 import { sanitizeNum } from "@/lib/utils";
 
@@ -281,50 +281,7 @@ export default function SettingsPage() {
     e.target.value = "";
   };
 
-  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user) return;
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const result = parseCSV(text);
-      const currentItems = await loadItems(user.uid);
-      const itemsById = new Map(currentItems.map((i) => [i.id, i]));
-      const maxOrder = currentItems.reduce((m, i) => Math.max(m, i.order), -1);
-      let nextOrder = maxOrder + 1;
-      const csvIdToCanonicalId = new Map<string, string>();
-      for (const upd of result.itemUpdates) {
-        const csvId = upd.id;
-        if (itemsById.has(csvId)) { csvIdToCanonicalId.set(csvId, csvId); continue; }
-        let matched: string | null = null;
-        for (const item of itemsById.values()) {
-          if (item.name === upd.name || item.aliases.some((a) => a.toLowerCase() === csvId.toLowerCase() || a === upd.name)) {
-            matched = item.id; break;
-          }
-        }
-        if (matched) {
-          csvIdToCanonicalId.set(csvId, matched);
-        } else {
-          itemsById.set(csvId, { id: csvId, name: upd.name, aliases: upd.alias ? [upd.alias, upd.name] : [upd.name], unit: upd.unit, range: { min: upd.rangeMin, max: upd.rangeMax }, order: nextOrder++, visible: true });
-          csvIdToCanonicalId.set(csvId, csvId);
-        }
-      }
-      const updatedItems = Array.from(itemsById.values()).sort((a, b) => a.order - b.order);
-      await saveItems(user.uid, updatedItems);
-      setItems(updatedItems);
-      const existing = await loadRecords(user.uid);
-      const existingDates = new Set(existing.map((r) => r.date));
-      const newRecords = result.records.filter((r) => !existingDates.has(r.date)).map((r) => ({ ...r, values: Object.fromEntries(Object.entries(r.values).map(([id, val]) => [csvIdToCanonicalId.get(id) ?? id, val])) }));
-      for (const r of newRecords) await saveRecord(user.uid, r);
-      const skipped = result.records.length - newRecords.length;
-      setImportMsg(`インポート完了: ${newRecords.length}件追加・${skipped}件重複スキップ（CSV解析: ${result.records.length}件）`);
-    } catch (err) {
-      setImportMsg(`エラー: ${err}`);
-    }
-    e.target.value = "";
-  };
-
-  const handleCSVExport = async () => {
+const handleCSVExport = async () => {
     if (!user) return;
     const records = await loadRecords(user.uid);
     const csv = exportToCSV(records, items);
@@ -715,9 +672,7 @@ export default function SettingsPage() {
                   <p className="font-bold mb-2">各形式の使い方</p>
 
                   <p className="font-semibold text-yellow-300">CSV</p>
-                  <p className="mt-0.5 text-gray-300">血液検査グラフアプリと互換の形式。外部アプリとのデータ移行に使用。</p>
-                  <p className="mt-1.5 text-gray-400 font-medium">列順（左から）:</p>
-                  <p className="text-gray-300 mt-0.5 font-mono text-[10px] leading-relaxed">年 / 月 / 日 / 項目名称 / 項目略称 / 値 / 単位 / 正常値下限 / 正常値上限</p>
+                  <p className="mt-0.5 text-gray-300">エクスポートのみ対応。外部アプリへのデータ移行に使用。</p>
 
                   <p className="font-semibold text-yellow-300 mt-3">JSON</p>
                   <p className="mt-0.5 text-gray-300">このアプリ独自のバックアップ形式。完全復元に使用。</p>
@@ -734,11 +689,6 @@ export default function SettingsPage() {
               </p>
             )}
             {/* インポート */}
-            <label className="flex items-center gap-2 w-full py-2.5 px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 transition">
-              <FileUp size={16} />
-              CSVインポート
-              <input type="file" accept=".csv" className="hidden" onChange={handleCSVImport} />
-            </label>
             <label className="flex items-center gap-2 w-full py-2.5 px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-50 transition">
               <FileUp size={16} />
               JSONインポート
