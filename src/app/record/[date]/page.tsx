@@ -3,7 +3,7 @@
 import { use, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send, Star, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronUp, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send, Star, AlertCircle } from "lucide-react";
 import { loadRecords, loadItems, saveRecord, deleteRecord, loadSettings, loadAIConversation, saveAIMessage } from "@/lib/firestoreStorage";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAbnormal } from "@/lib/itemMaster";
@@ -49,6 +49,8 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const [aiLoading,    setAiLoading]    = useState(false);
   const [aiError,      setAiError]      = useState("");
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const needsScrollRef = useRef(false);
+  const topRef = useRef<HTMLDivElement>(null);
 
   // 編集モーダル
   const [editing,      setEditing]      = useState(false);
@@ -77,6 +79,8 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   }, [date, user, router]);
 
   useEffect(() => {
+    if (!needsScrollRef.current) return;
+    needsScrollRef.current = false;
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [aiMessages]);
 
@@ -85,6 +89,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
     const settings = await loadSettings(user.uid);
     setAiError("");
     setAiLoading(true);
+    needsScrollRef.current = true;
 
     // ユーザーメッセージをまず保存・表示
     let history = [...aiMessages];
@@ -280,9 +285,9 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
       </AnimatePresence>
 
       <main className="flex-1 pb-24">
-        {/* 件数バー */}
+        {/* 件数バー（sticky） */}
         {record && (
-          <div className="bg-white border-b border-gray-100 px-4 pt-2 pb-1.5">
+          <div className="bg-white border-b border-gray-100 px-4 pt-2 pb-1.5 sticky top-[72px] z-[9]">
             {/* 1行目: 件数 */}
             <span className="text-xs text-gray-600 block text-center">
               検索項目数: <b>{itemCount}</b>項目　閾値外: <b className={abnCount > 0 ? "text-red-600" : ""}>{abnCount}</b>項目　注目: <b>{requiredCount}</b>項目
@@ -341,6 +346,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
           </div>
         ) : (
           <>
+            <div ref={topRef} />
             <DraggableItemList
               items={filteredItems}
               record={record}
@@ -348,9 +354,20 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
               filteredIds={filteredItems.map(i => i.id)}
             />
 
+            {/* 先頭に戻るボタン */}
+            <div className="flex justify-center py-3 border-t border-gray-100">
+              <button
+                onClick={() => topRef.current?.scrollIntoView({ behavior: "smooth" })}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition"
+              >
+                <ChevronUp size={14} />
+                先頭へ
+              </button>
+            </div>
+
             {/* AI チャットセクション */}
-            <div className="mx-4 mt-4 mb-2">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="mt-2 mb-2">
+              <div className="bg-white border-t border-gray-100 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles size={15} className="text-red-500" />
