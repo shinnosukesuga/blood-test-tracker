@@ -413,7 +413,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                 <button
                   onClick={() => {
                     if (!aiSectionRef.current) return;
-                    const stickyOffset = 72 + (countBarRef.current?.getBoundingClientRect().height ?? 0);
+                    const stickyOffset = 72 + (countBarRef.current?.getBoundingClientRect().height ?? 0) - 8;
                     const top = aiSectionRef.current.getBoundingClientRect().top + window.scrollY - stickyOffset;
                     window.scrollTo({ top, behavior: "smooth" });
                   }}
