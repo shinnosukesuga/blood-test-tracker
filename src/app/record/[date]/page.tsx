@@ -355,10 +355,10 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             />
 
             {/* 先頭に戻るボタン */}
-            <div className="flex justify-center py-3 border-t border-gray-100">
+            <div className="flex justify-center py-3 bg-gray-100 border-t-2 border-gray-200">
               <button
-                onClick={() => topRef.current?.scrollIntoView({ behavior: "smooth" })}
-                className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                className="flex items-center gap-1 text-xs text-gray-500 font-medium"
               >
                 <ChevronUp size={14} />
                 先頭へ
@@ -366,8 +366,8 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             </div>
 
             {/* AI チャットセクション */}
-            <div className="mt-2 mb-2">
-              <div className="bg-white border-t border-gray-100 overflow-hidden">
+            <div className="mt-0 mb-2">
+              <div className="bg-white border-t-2 border-red-100 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles size={15} className="text-red-500" />
