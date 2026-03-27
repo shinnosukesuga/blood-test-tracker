@@ -48,8 +48,9 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const [aiInput,      setAiInput]      = useState("");
   const [aiLoading,    setAiLoading]    = useState(false);
   const [aiError,      setAiError]      = useState("");
-  const [aiSelectMode, setAiSelectMode] = useState(false);
-  const [aiSelected,   setAiSelected]   = useState<Set<number>>(new Set());
+  const [aiSelectMode,    setAiSelectMode]    = useState(false);
+  const [aiSelected,      setAiSelected]      = useState<Set<number>>(new Set());
+  const [confirmAiDelete, setConfirmAiDelete] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const needsScrollRef = useRef(false);
   const topRef = useRef<HTMLDivElement>(null);
@@ -137,6 +138,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
     setAiMessages(remaining);
     setAiSelected(new Set());
     setAiSelectMode(false);
+    setConfirmAiDelete(false);
   };
 
   const openEdit = () => {
@@ -271,6 +273,47 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
           </div>
         </div>
       </header>
+
+      {/* AIメッセージ削除確認ダイアログ */}
+      <AnimatePresence>
+        {confirmAiDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl p-5 w-full max-w-sm"
+            >
+              <div className="flex items-start gap-3 mb-4">
+                <AlertTriangle size={22} className="text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-gray-800">{aiSelected.size}件のメッセージを削除しますか？</p>
+                  <p className="text-xs text-gray-500 mt-1">この操作は取り消せません。</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAiDeleteSelected}
+                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold"
+                >
+                  削除する
+                </button>
+                <button
+                  onClick={() => setConfirmAiDelete(false)}
+                  className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium"
+                >
+                  キャンセル
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 削除確認ダイアログ */}
       <AnimatePresence>
@@ -437,7 +480,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                           キャンセル
                         </button>
                         <button
-                          onClick={handleAiDeleteSelected}
+                          onClick={() => setConfirmAiDelete(true)}
                           disabled={aiSelected.size === 0}
                           className="px-3 py-1 text-xs bg-red-600 text-white rounded-full disabled:opacity-40"
                         >
@@ -477,7 +520,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                           });
                         }}
                       >
-                        {aiSelectMode && msg.role !== "user" && (
+                        {aiSelectMode && (
                           <div className="shrink-0 mt-1">
                             {aiSelected.has(i)
                               ? <CheckCircle2 size={18} className="text-red-500" />
