@@ -605,7 +605,16 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
 
                 {/* 入力欄（初回分析後に表示） */}
                 {aiMessages.length > 0 && (
-                  <div className="border-t border-gray-100 px-3 py-2 flex items-end gap-2">
+                  <div className="border-t border-gray-100">
+                    <div className="flex justify-center py-1">
+                      <button
+                        onClick={() => topRef.current?.scrollIntoView({ behavior: "smooth" })}
+                        className="text-xs text-gray-400 flex items-center gap-0.5"
+                      >
+                        <ChevronUp size={11} />先頭へ
+                      </button>
+                    </div>
+                  <div className="px-3 py-2 flex items-end gap-2">
                     <textarea
                       value={aiInput}
                       onChange={e => setAiInput(e.target.value)}
@@ -626,6 +635,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                     >
                       <Send size={16} />
                     </button>
+                  </div>
                   </div>
                 )}
               </div>
