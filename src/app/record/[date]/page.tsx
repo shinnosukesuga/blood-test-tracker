@@ -54,6 +54,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const needsScrollRef = useRef(false);
   const topRef = useRef<HTMLDivElement>(null);
   const aiSectionRef = useRef<HTMLDivElement>(null);
+  const countBarRef = useRef<HTMLDivElement>(null);
   const [needsScroll, setNeedsScroll] = useState(false);
 
   // 編集モーダル
@@ -357,7 +358,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
       <main className="flex-1 pb-24">
         {/* 件数バー（sticky） */}
         {record && (
-          <div className="bg-white border-b border-gray-100 px-4 pt-2 pb-1.5 sticky top-[72px] z-[9]">
+          <div ref={countBarRef} className="bg-white border-b border-gray-100 px-4 pt-2 pb-1.5 sticky top-[72px] z-[9]">
             {/* 1行目: 件数 */}
             <span className="text-xs text-gray-600 block text-center">
               検索項目数: <b>{itemCount}</b>項目　閾値外: <b className={abnCount > 0 ? "text-red-600" : ""}>{abnCount}</b>項目　注目: <b>{requiredCount}</b>項目
@@ -410,7 +411,12 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             {needsScroll && (
               <div className="flex justify-end mt-1">
                 <button
-                  onClick={() => aiSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
+                  onClick={() => {
+                    if (!aiSectionRef.current) return;
+                    const stickyOffset = 72 + (countBarRef.current?.getBoundingClientRect().height ?? 0);
+                    const top = aiSectionRef.current.getBoundingClientRect().top + window.scrollY - stickyOffset;
+                    window.scrollTo({ top, behavior: "smooth" });
+                  }}
                   className="flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
                 >
                   <ChevronUp size={11} className="rotate-180" />
@@ -436,7 +442,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             />
 
             {/* AI チャットセクション */}
-            <div ref={aiSectionRef} className="mt-0 mb-2 scroll-mt-[120px]">
+            <div ref={aiSectionRef} className="mt-0 mb-2">
               <div className="bg-white border-t-2 border-red-100 overflow-hidden">
                 <div className="px-4 pt-3 pb-2 border-b border-gray-100 bg-gray-50">
                   {/* タイトル行 */}
