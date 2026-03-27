@@ -6,7 +6,7 @@ import { Reorder, useDragControls } from "framer-motion";
 import { ChevronLeft, Save, Trash2, Plus, X, GripVertical, FileDown, FileUp, Pencil } from "lucide-react";
 import { loadSettings, saveSettings, importJSON, loadItems, saveItems, loadRecords, generateId, resetItemOrder, exportJSON } from "@/lib/firestoreStorage";
 import { useAuth } from "@/contexts/AuthContext";
-import { exportToCSV, downloadFile } from "@/lib/csvParser";
+import { downloadFile } from "@/lib/csvParser";
 import { AppSettings, ItemMaster } from "@/lib/types";
 import { sanitizeNum } from "@/lib/utils";
 
@@ -281,15 +281,7 @@ export default function SettingsPage() {
     e.target.value = "";
   };
 
-const handleCSVExport = async () => {
-    if (!user) return;
-    const records = await loadRecords(user.uid);
-    const csv = exportToCSV(records, items);
-    const now = new Date().toISOString().slice(0, 10);
-    downloadFile(csv, `bloodtrack_${now}.csv`, "text/csv;charset=utf-8");
-  };
-
-  const handleJSONExport = async () => {
+const handleJSONExport = async () => {
     if (!user) return;
     const json = await exportJSON(user.uid);
     const now = new Date().toISOString().slice(0, 10);
@@ -671,10 +663,7 @@ const handleCSVExport = async () => {
                 <div className="absolute left-0 top-6 z-10 bg-gray-800 text-white text-xs rounded-lg p-3 w-72 shadow-lg text-left">
                   <p className="font-bold mb-2">各形式の使い方</p>
 
-                  <p className="font-semibold text-yellow-300">CSV</p>
-                  <p className="mt-0.5 text-gray-300">エクスポートのみ対応。外部アプリへのデータ移行に使用。</p>
-
-                  <p className="font-semibold text-yellow-300 mt-3">JSON</p>
+                  <p className="font-semibold text-yellow-300">JSON</p>
                   <p className="mt-0.5 text-gray-300">このアプリ独自のバックアップ形式。完全復元に使用。</p>
                   <p className="mt-1.5 text-gray-400 font-medium">含まれるデータ:</p>
                   <p className="text-gray-300 mt-0.5 font-mono text-[10px] leading-relaxed">items（項目設定）/ records（検査記録）/ events（イベント）/ exportedAt（出力日時）</p>
@@ -695,13 +684,6 @@ const handleCSVExport = async () => {
               <input type="file" accept=".json" className="hidden" onChange={handleJSONImport} />
             </label>
             {/* エクスポート */}
-            <button
-              onClick={handleCSVExport}
-              className="w-full flex items-center gap-2 py-2.5 px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-            >
-              <FileDown size={16} />
-              CSVエクスポート
-            </button>
             <button
               onClick={handleJSONExport}
               className="w-full flex items-center gap-2 py-2.5 px-4 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
