@@ -24,14 +24,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // リダイレクト後の結果を処理
-    getRedirectResult(auth).catch(() => {});
+    let unsub: (() => void) | undefined;
 
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
-    return unsub;
+    // リダイレクト結果を処理してからonAuthStateChangedを設定
+    // (先にonAuthStateChangedを設定するとnullで確定してしまう)
+    getRedirectResult(auth)
+      .catch(() => {})
+      .finally(() => {
+        unsub = onAuthStateChanged(auth, (u) => {
+          setUser(u);
+          setLoading(false);
+        });
+      });
+
+    return () => unsub?.();
   }, []);
 
   const loginWithGoogle = async () => {
