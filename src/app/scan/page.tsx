@@ -139,8 +139,9 @@ export default function ScanPage() {
       const prev = await getPreviousRecord(user.uid, scanDate);
       const analysis = await analyzeRecords(record, prev, items);
       if (analysis.hasSignificantChanges) {
+        const insightLines = analysis.insights.map(i => `${i.item}：${i.description}\n${i.content}`);
         setAiAnalysis(
-          [analysis.summary, ...analysis.insights, ...analysis.recommendations.map((r) => `• ${r}`)].join("\n")
+          [analysis.summary, ...insightLines, ...analysis.recommendations.map((r) => `• ${r}`)].join("\n\n")
         );
       } else {
         setAiAnalysis(analysis.summary);

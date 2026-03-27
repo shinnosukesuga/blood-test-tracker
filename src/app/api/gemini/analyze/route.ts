@@ -21,14 +21,14 @@ ${itemsInfo}
 - 言及すべき項目がゼロの場合のみ summary に「数値は安定しています」と1文で記載
 - insights には言及した項目に対する具体的対策（食事・運動・生活習慣）を3つ以内
 - hasSignificantChanges は言及すべき項目があるかどうか
-- insights の各要素は必ず「項目名：説明（何を測る指標か10字以内）\n内容」の2行形式にする。例：「HbA1c：血糖の長期管理指標\n基準値超過・前回比10%増」
+- insights の各要素は { "item": "項目名", "description": "何を測る指標か10字以内", "content": "分析内容" } の形式にする
 - 文体：ですます調は使わない。体言止めや短文で簡潔に
 - 末尾の句点（。）は不要
 
 以下のJSON形式のみで返せ:
 {
   "summary": "概要文",
-  "insights": ["示唆1", "示唆2"],
+  "insights": [{"item": "項目名", "description": "項目説明", "content": "分析内容"}],
   "recommendations": ["対策1", "対策2", "対策3"],
   "hasSignificantChanges": true/false
 }

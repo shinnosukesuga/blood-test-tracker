@@ -54,9 +54,15 @@ export interface GeminiScanResult {
   rawText: string;
 }
 
+export interface AIInsight {
+  item: string;        // 検査項目名 e.g. "HbA1c"
+  description: string; // 項目説明 e.g. "血糖の長期管理指標"
+  content: string;     // 分析内容 e.g. "基準値超過・前回比10%増"
+}
+
 export interface AIAnalysis {
   summary: string;
-  insights: string[];
+  insights: AIInsight[];
   recommendations: string[];
   hasSignificantChanges: boolean;
 }
