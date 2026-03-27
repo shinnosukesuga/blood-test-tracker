@@ -99,7 +99,6 @@ export default function ScanPage() {
     setStagedFiles([]);
     setStagedUrls([]);
     setScanItems([]);
-    setScanError(null);
     setStep("upload");
   };
 
