@@ -3,8 +3,8 @@
 import { use, useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, ChevronUp, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send, Star, AlertCircle } from "lucide-react";
-import { loadRecords, loadItems, saveRecord, deleteRecord, loadSettings, loadAIConversation, saveAIMessage } from "@/lib/firestoreStorage";
+import { ChevronLeft, ChevronRight, ChevronUp, Pencil, Check, X, Trash2, AlertTriangle, Sparkles, Send, Star, AlertCircle, CheckCircle2, Circle } from "lucide-react";
+import { loadRecords, loadItems, saveRecord, deleteRecord, loadSettings, loadAIConversation, saveAIMessage, saveAIConversation } from "@/lib/firestoreStorage";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAbnormal } from "@/lib/itemMaster";
 import { BloodRecord, ItemMaster, AIMessage } from "@/lib/types";
@@ -48,6 +48,8 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const [aiInput,      setAiInput]      = useState("");
   const [aiLoading,    setAiLoading]    = useState(false);
   const [aiError,      setAiError]      = useState("");
+  const [aiSelectMode, setAiSelectMode] = useState(false);
+  const [aiSelected,   setAiSelected]   = useState<Set<number>>(new Set());
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const needsScrollRef = useRef(false);
   const topRef = useRef<HTMLDivElement>(null);
@@ -126,6 +128,15 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handleAiDeleteSelected = async () => {
+    if (!record || !user || aiSelected.size === 0) return;
+    const remaining = aiMessages.filter((_, i) => !aiSelected.has(i));
+    await saveAIConversation(user.uid, record.id, remaining);
+    setAiMessages(remaining);
+    setAiSelected(new Set());
+    setAiSelectMode(false);
   };
 
   const openEdit = () => {
@@ -387,22 +398,54 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             <div ref={aiSectionRef} className="mt-0 mb-2">
               <div className="bg-white border-t-2 border-red-100 overflow-hidden">
                 <div className="px-4 pt-3 pb-2 border-b border-gray-100 bg-gray-50">
-                  {/* タイトル行: 中央寄せ + 先頭へ右端 */}
+                  {/* タイトル行 */}
                   <div className="relative flex items-center justify-center">
                     <div className="flex items-center gap-2">
                       <Sparkles size={16} className="text-red-500" />
                       <h2 className="text-base font-semibold text-gray-700">AI分析</h2>
                     </div>
-                    {needsScroll && (
-                      <button
-                        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                        className="absolute right-0 flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
-                      >
-                        <ChevronUp size={11} />
-                        先頭へ
-                      </button>
-                    )}
+                    <div className="absolute right-0 flex items-center gap-2">
+                      {aiMessages.length > 0 && !aiSelectMode && (
+                        <button
+                          onClick={() => { setAiSelectMode(true); setAiSelected(new Set()); }}
+                          className="flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
+                        >
+                          <Trash2 size={11} />
+                          選択
+                        </button>
+                      )}
+                      {needsScroll && !aiSelectMode && (
+                        <button
+                          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                          className="flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
+                        >
+                          <ChevronUp size={11} />
+                          先頭へ
+                        </button>
+                      )}
+                    </div>
                   </div>
+                  {/* 選択モードの操作バー */}
+                  {aiSelectMode && (
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs text-gray-500">{aiSelected.size}件選択中</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setAiSelectMode(false); setAiSelected(new Set()); }}
+                          className="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full"
+                        >
+                          キャンセル
+                        </button>
+                        <button
+                          onClick={handleAiDeleteSelected}
+                          disabled={aiSelected.size === 0}
+                          className="px-3 py-1 text-xs bg-red-600 text-white rounded-full disabled:opacity-40"
+                        >
+                          削除
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {/* この記録を分析するボタン: 中央寄せ */}
                   {aiMessages.length === 0 && (
                     <div className="flex justify-center mt-2">
@@ -422,8 +465,28 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                 {aiMessages.length > 0 && (
                   <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
                     {aiMessages.map((msg, i) => (
-                      <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div
+                        key={i}
+                        className={`flex items-start gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                        onClick={() => {
+                          if (!aiSelectMode) return;
+                          setAiSelected(prev => {
+                            const next = new Set(prev);
+                            next.has(i) ? next.delete(i) : next.add(i);
+                            return next;
+                          });
+                        }}
+                      >
+                        {aiSelectMode && msg.role !== "user" && (
+                          <div className="shrink-0 mt-1">
+                            {aiSelected.has(i)
+                              ? <CheckCircle2 size={18} className="text-red-500" />
+                              : <Circle size={18} className="text-gray-300" />}
+                          </div>
+                        )}
                         <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                          aiSelectMode && aiSelected.has(i) ? "opacity-50" : ""
+                        } ${
                           msg.role === "user"
                             ? "bg-red-600 text-white rounded-br-sm"
                             : "bg-gray-100 text-gray-800 rounded-bl-sm"

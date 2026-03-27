@@ -205,6 +205,15 @@ export async function saveAIMessage(
   }
 }
 
+export async function saveAIConversation(uid: string, recordId: string, messages: AIMessage[]): Promise<void> {
+  const ref = doc(db, "users", uid, "aiConversations", recordId);
+  if (messages.length === 0) {
+    await deleteDoc(ref);
+  } else {
+    await setDoc(ref, { recordId, messages });
+  }
+}
+
 export async function deleteAIConversation(uid: string, recordId: string): Promise<void> {
   await deleteDoc(doc(db, "users", uid, "aiConversations", recordId));
 }
