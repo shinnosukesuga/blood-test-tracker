@@ -9,7 +9,6 @@ import { loadRecords, saveRecord, loadItems, generateId, deleteRecord, migrateFr
 import { useAuth } from "@/contexts/AuthContext";
 import { isAbnormal } from "@/lib/itemMaster";
 import { BloodRecord, ItemMaster } from "@/lib/types";
-import DatePicker from "@/components/DatePicker";
 import { sanitizeNum } from "@/lib/utils";
 
 const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
@@ -67,7 +66,6 @@ export default function HomePage() {
   const [newOpen, setNewOpen] = useState(false);
   const [newDate, setNewDate] = useState("");
   const [newVals, setNewVals] = useState<Record<string, string>>({});
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     if (!user) { router.push("/login"); return; }
@@ -409,19 +407,12 @@ export default function HomePage() {
 
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 shrink-0">
               <label className="text-xs text-gray-500 font-medium block mb-1">検査日</label>
-              <button
-                onClick={() => setShowDatePicker(true)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-left w-full text-gray-800"
-              >
-                {newDate || "日付を選択"}
-              </button>
-              {showDatePicker && (
-                <DatePicker
-                  value={newDate}
-                  onChange={setNewDate}
-                  onClose={() => setShowDatePicker(false)}
-                />
-              )}
+              <input
+                type="date"
+                value={newDate}
+                onChange={e => setNewDate(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-800 w-full"
+              />
             </div>
 
             <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
