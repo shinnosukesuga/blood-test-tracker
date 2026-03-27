@@ -192,11 +192,12 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   }, [sortedItems, showAbnOnly, showRequiredOnly, record]);
 
   // フィルター結果が1ページに収まるか判定
+  // getBoundingClientRect().top はスクロール位置依存なので offsetTop + scrollY で絶対位置を使う
   useEffect(() => {
     const check = () => {
       if (!aiSectionRef.current) return;
-      const top = aiSectionRef.current.getBoundingClientRect().top;
-      setNeedsScroll(top > window.innerHeight - 10);
+      const absoluteTop = aiSectionRef.current.getBoundingClientRect().top + window.scrollY;
+      setNeedsScroll(absoluteTop > window.innerHeight - 10);
     };
     const raf = requestAnimationFrame(check);
     window.addEventListener("resize", check);
@@ -204,7 +205,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", check);
     };
-  }, [filteredItems]);
+  }, [filteredItems, aiMessages]);
 
   const itemCount      = record ? Object.keys(record.values).length : 0;
   const abnCount       = sortedItems.filter(item => {
