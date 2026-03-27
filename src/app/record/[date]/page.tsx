@@ -51,6 +51,8 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const needsScrollRef = useRef(false);
   const topRef = useRef<HTMLDivElement>(null);
+  const aiSectionRef = useRef<HTMLDivElement>(null);
+  const [needsScroll, setNeedsScroll] = useState(false);
 
   // 編集モーダル
   const [editing,      setEditing]      = useState(false);
@@ -188,6 +190,14 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
     if (showRequiredOnly) result = result.filter(item => item.required);
     return result;
   }, [sortedItems, showAbnOnly, showRequiredOnly, record]);
+
+  // フィルター結果が1ページに収まるか判定
+  useEffect(() => {
+    const check = () => setNeedsScroll(document.documentElement.scrollHeight > window.innerHeight + 10);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [filteredItems]);
 
   const itemCount      = record ? Object.keys(record.values).length : 0;
   const abnCount       = sortedItems.filter(item => {
@@ -337,6 +347,17 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                 注目
               </button>
             </div>
+            {needsScroll && (
+              <div className="flex justify-end mt-1">
+                <button
+                  onClick={() => aiSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
+                  className="flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
+                >
+                  AI分析へ
+                  <ChevronUp size={11} className="rotate-180" />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -355,18 +376,20 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             />
 
             {/* 先頭に戻るボタン */}
-            <div className="flex justify-center py-3 bg-gray-100 border-t-2 border-gray-200">
-              <button
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-                className="flex items-center gap-1 text-xs text-gray-500 font-medium"
-              >
-                <ChevronUp size={14} />
-                先頭へ
-              </button>
-            </div>
+            {needsScroll && (
+              <div className="flex justify-center py-3 bg-gray-100 border-t-2 border-gray-200">
+                <button
+                  onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                  className="flex items-center gap-1 text-xs text-gray-500 font-medium"
+                >
+                  <ChevronUp size={14} />
+                  先頭へ
+                </button>
+              </div>
+            )}
 
             {/* AI チャットセクション */}
-            <div className="mt-0 mb-2">
+            <div ref={aiSectionRef} className="mt-0 mb-2">
               <div className="bg-white border-t-2 border-red-100 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
