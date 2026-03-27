@@ -304,7 +304,12 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                 編集
               </button>
               <button
-                onClick={() => setShowAbnOnly(v => !v)}
+                onClick={() => {
+                  const next = !showAbnOnly;
+                  setShowAbnOnly(next);
+                  const q = [next ? "abn=1" : "", showRequiredOnly ? "req=1" : ""].filter(Boolean).join("&");
+                  router.replace(q ? `/record/${date}?${q}` : `/record/${date}`, { scroll: false });
+                }}
                 className={`flex flex-1 items-center justify-center gap-1 py-1 rounded-full text-xs font-medium border transition ${
                   showAbnOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}
@@ -313,7 +318,12 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                 閾値外
               </button>
               <button
-                onClick={() => setShowRequiredOnly(v => !v)}
+                onClick={() => {
+                  const next = !showRequiredOnly;
+                  setShowRequiredOnly(next);
+                  const q = [showAbnOnly ? "abn=1" : "", next ? "req=1" : ""].filter(Boolean).join("&");
+                  router.replace(q ? `/record/${date}?${q}` : `/record/${date}`, { scroll: false });
+                }}
                 className={`flex flex-1 items-center justify-center gap-1 py-1 rounded-full text-xs font-medium border transition ${
                   showRequiredOnly ? "bg-red-50 text-red-700 border-red-300" : "bg-gray-50 text-gray-500 border-gray-200"
                 }`}
