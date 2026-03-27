@@ -606,7 +606,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                 {/* 入力欄（初回分析後に表示） */}
                 {aiMessages.length > 0 && (
                   <div className="border-t border-gray-100">
-                    <div className="flex justify-center py-1">
+                    <div className="flex justify-end px-3 pt-1">
                       <button
                         onClick={() => topRef.current?.scrollIntoView({ behavior: "smooth" })}
                         className="text-xs text-gray-400 flex items-center gap-0.5"
@@ -624,7 +624,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                           handleAiAnalyze(aiInput.trim());
                         }
                       }}
-                      placeholder="AIへの質問・追記（例：この頃から薬を飲み始めた）"
+                      placeholder="AIへの質問・追記"
                       rows={2}
                       className="flex-1 resize-none text-sm border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-red-400 bg-gray-50"
                     />
