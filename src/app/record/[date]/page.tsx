@@ -361,8 +361,8 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                   onClick={() => aiSectionRef.current?.scrollIntoView({ behavior: "smooth" })}
                   className="flex items-center gap-0.5 text-[11px] text-gray-400 py-0.5"
                 >
-                  AI分析へ
                   <ChevronUp size={11} className="rotate-180" />
+                  AI分析へ
                 </button>
               </div>
             )}
