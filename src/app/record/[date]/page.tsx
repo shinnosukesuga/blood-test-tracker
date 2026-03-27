@@ -11,7 +11,6 @@ import { BloodRecord, ItemMaster, AIMessage } from "@/lib/types";
 import { analyzeWithContext } from "@/lib/gemini";
 import { sanitizeNum } from "@/lib/utils";
 import DraggableItemList from "@/components/DraggableItemList";
-import DatePicker from "@/components/DatePicker";
 import ReactMarkdown from "react-markdown";
 
 const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
@@ -64,7 +63,6 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
   const [editValues,   setEditValues]   = useState<Record<string, string>>({});
   const [origDate,     setOrigDate]     = useState("");
   const [origValues,   setOrigValues]   = useState<Record<string, string>>({});
-  const [showDatePicker,  setShowDatePicker]  = useState(false);
   const [confirmDelete,   setConfirmDelete]   = useState(false);
 
   useEffect(() => {
@@ -663,19 +661,12 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
             {/* 日付編集 */}
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 shrink-0">
               <label className="text-xs text-gray-500 font-medium block mb-1">検査日</label>
-              <button
-                onClick={() => setShowDatePicker(true)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-left w-full text-gray-800"
-              >
-                {editDate || "日付を選択"}
-              </button>
-              {showDatePicker && (
-                <DatePicker
-                  value={editDate}
-                  onChange={setEditDate}
-                  onClose={() => setShowDatePicker(false)}
-                />
-              )}
+              <input
+                type="date"
+                value={editDate}
+                onChange={e => setEditDate(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-800 w-full"
+              />
             </div>
 
             {/* 項目一覧 */}

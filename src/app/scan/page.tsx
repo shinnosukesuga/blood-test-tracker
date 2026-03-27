@@ -7,7 +7,7 @@ import { ChevronLeft, Check, X, Sparkles, AlertTriangle, Play, ImagePlus } from 
 import { GeminiScanResult, BloodRecord } from "@/lib/types";
 import { loadItems, saveRecord, generateId, loadRecords, getPreviousRecord } from "@/lib/firestoreStorage";
 import { useAuth } from "@/contexts/AuthContext";
-import DatePicker from "@/components/DatePicker";
+import { useAsyncOperation } from "@/hooks/useAsyncOperation";
 import { scanImageWithGemini, fileToBase64, analyzeRecords } from "@/lib/gemini";
 import { findItem } from "@/lib/itemMaster";
 import { sanitizeNum } from "@/lib/utils";
@@ -32,13 +32,11 @@ export default function ScanPage() {
   // ステージング（スキャン前の画像キュー）
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [stagedUrls, setStagedUrls] = useState<string[]>([]);
-  const [scanning, setScanning] = useState(false);
+  const { loading: scanning, error: scanError, execute: executeProcess } = useAsyncOperation();
   const [scanProgress, setScanProgress] = useState<{ current: number; total: number } | null>(null);
-  const [scanError, setScanError] = useState<string | null>(null);
   const [scanItems, setScanItems] = useState<ScanItem[]>([]);
   const [scanDate, setScanDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [showAbnormalOnly, setShowAbnormalOnly] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
 
   // ファイルをステージングキューに追加
@@ -58,11 +56,9 @@ export default function ScanPage() {
 
   const processFiles = async () => {
     if (stagedFiles.length === 0) return;
-    setScanError(null);
-    setScanning(true);
     setScanProgress({ current: 0, total: stagedFiles.length });
 
-    try {
+    await executeProcess(async () => {
       if (!user) return;
       const items = await loadItems(user.uid);
       const mergedMap = new Map<string, ScanItem>();
@@ -94,12 +90,9 @@ export default function ScanPage() {
       if (detectedDate) setScanDate(detectedDate);
       setScanItems(Array.from(mergedMap.values()));
       setStep("review");
-    } catch (err) {
-      setScanError(`スキャンエラー: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setScanning(false);
-      setScanProgress(null);
-    }
+    });
+
+    setScanProgress(null);
   };
 
   const resetUpload = () => {
@@ -282,20 +275,13 @@ export default function ScanPage() {
           <div>
             {/* 検査日 */}
             <div className="bg-white px-4 py-3 border-b border-gray-200">
-              <label className="text-xs text-gray-500 font-medium">検査日</label>
-              <button
-                onClick={() => setShowDatePicker(true)}
-                className="block w-full mt-1 text-base font-semibold text-gray-800 text-left"
-              >
-                {scanDate || "日付を選択"}
-              </button>
-              {showDatePicker && (
-                <DatePicker
-                  value={scanDate}
-                  onChange={setScanDate}
-                  onClose={() => setShowDatePicker(false)}
-                />
-              )}
+              <label className="text-xs text-gray-500 font-medium block mb-1">検査日</label>
+              <input
+                type="date"
+                value={scanDate}
+                onChange={e => setScanDate(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-800 w-full"
+              />
             </div>
 
             {/* フィルター */}
