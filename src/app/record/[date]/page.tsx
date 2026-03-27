@@ -608,7 +608,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                   <div className="border-t border-gray-100">
                     <div className="flex justify-end px-3 pt-1">
                       <button
-                        onClick={() => topRef.current?.scrollIntoView({ behavior: "smooth" })}
+                        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                         className="text-xs text-gray-400 flex items-center gap-0.5"
                       >
                         <ChevronUp size={11} />先頭へ
