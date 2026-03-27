@@ -42,7 +42,8 @@ function validateItemMaster(i: unknown): i is ItemMaster {
     Array.isArray(i.aliases) &&
     typeof i.unit === "string" &&
     isValidObject(i.range) &&
-    typeof i.visible === "boolean"
+    typeof i.visible === "boolean" &&
+    (i.required === undefined || typeof i.required === "boolean")
   );
 }
 
