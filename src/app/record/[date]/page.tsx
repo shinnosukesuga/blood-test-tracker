@@ -296,16 +296,16 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={handleAiDeleteSelected}
-                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold"
-                >
-                  削除する
-                </button>
-                <button
                   onClick={() => setConfirmAiDelete(false)}
                   className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium"
                 >
                   キャンセル
+                </button>
+                <button
+                  onClick={handleAiDeleteSelected}
+                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold"
+                >
+                  削除する
                 </button>
               </div>
             </motion.div>
@@ -337,16 +337,16 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={handleDelete}
-                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold"
-                >
-                  削除する
-                </button>
-                <button
                   onClick={() => setConfirmDelete(false)}
                   className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium"
                 >
                   キャンセル
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold"
+                >
+                  削除する
                 </button>
               </div>
             </motion.div>

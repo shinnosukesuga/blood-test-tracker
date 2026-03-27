@@ -475,16 +475,16 @@ const handleJSONExport = async () => {
           </p>
           <div className="flex gap-2">
             <button
-              onClick={handleDeleteExecute}
-              className="flex-1 py-2 bg-red-600 text-white rounded-xl text-xs font-bold"
-            >
-              削除する
-            </button>
-            <button
               onClick={() => setShowDeleteConfirm(false)}
               className="flex-1 py-2 bg-white border border-red-300 text-red-700 rounded-xl text-xs font-medium"
             >
               キャンセル
+            </button>
+            <button
+              onClick={handleDeleteExecute}
+              className="flex-1 py-2 bg-red-600 text-white rounded-xl text-xs font-bold"
+            >
+              削除する
             </button>
           </div>
         </div>

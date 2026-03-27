@@ -253,16 +253,16 @@ export default function HomePage() {
                           <p className="text-xs text-gray-500 mt-0.5">この操作は取り消せません</p>
                           <div className="flex gap-2 mt-3">
                             <button
-                              onClick={handleDeleteConfirmed}
-                              className="flex-1 py-2 bg-red-600 text-white rounded-xl text-sm font-bold"
-                            >
-                              削除する
-                            </button>
-                            <button
                               onClick={() => setConfirmDelete(false)}
                               className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium"
                             >
                               キャンセル
+                            </button>
+                            <button
+                              onClick={handleDeleteConfirmed}
+                              className="flex-1 py-2 bg-red-600 text-white rounded-xl text-sm font-bold"
+                            >
+                              削除する
                             </button>
                           </div>
                         </div>
