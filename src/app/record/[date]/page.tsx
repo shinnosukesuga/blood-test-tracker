@@ -432,7 +432,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                             <span className="whitespace-pre-wrap">{msg.content}</span>
                           ) : (
                             <ReactMarkdown
-                              allowedElements={["p", "strong", "em", "ul", "ol", "li", "br"]}
+                              allowedElements={["p", "strong", "em", "ul", "ol", "li", "br", "h3", "hr"]}
                               unwrapDisallowed
                               components={{
                                 p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
@@ -440,6 +440,8 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                                 ul: ({ children }) => <ul className="list-disc list-inside space-y-0.5 my-1">{children}</ul>,
                                 ol: ({ children }) => <ol className="list-decimal list-inside space-y-0.5 my-1">{children}</ol>,
                                 li: ({ children }) => <li>{children}</li>,
+                                h3: ({ children }) => <h3 className="text-base font-bold text-gray-800 mt-1 mb-0.5">{children}</h3>,
+                                hr: () => <hr className="border-t border-gray-300 my-2" />,
                               }}
                             >
                               {msg.content}
