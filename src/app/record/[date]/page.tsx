@@ -551,7 +551,7 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                                       <div key={j} className={j > 0 ? "pt-3 border-t border-gray-300" : ""}>
                                         <p className="font-bold text-gray-800">■ {ins.item}</p>
                                         <p className="text-xs text-gray-500">{ins.description}</p>
-                                        <p className="mt-0.5">{ins.value}</p>
+                                        <p className={`mt-0.5 font-medium ${ins.value.includes("▲") ? "text-blue-600" : ins.value.includes("+") ? "text-red-600" : ""}`}>{ins.value}</p>
                                         <p className="text-gray-600">{ins.insight}</p>
                                         {ins.recommendations && ins.recommendations.length > 0 && (
                                           <div className="mt-1">
