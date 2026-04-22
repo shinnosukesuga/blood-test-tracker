@@ -563,6 +563,12 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                                         )}
                                       </div>
                                     ))}
+                                    {parsed.summary && (
+                                      <div className="mt-3 pt-3 border-t-2 border-gray-300">
+                                        <p className="text-xs font-bold text-gray-500 mb-1">── 総括</p>
+                                        <p className="text-sm text-gray-700 leading-relaxed">{parsed.summary}</p>
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               }
