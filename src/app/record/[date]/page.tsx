@@ -565,8 +565,24 @@ export default function RecordDetailPage({ params }: { params: Promise<{ date: s
                                     ))}
                                     {parsed.summary && (
                                       <div className="mt-3 pt-3 border-t-2 border-gray-300">
-                                        <p className="text-xs font-bold text-gray-500 mb-1">── 総括</p>
-                                        <p className="text-sm text-gray-700 leading-relaxed">{parsed.summary}</p>
+                                        <p className="font-bold text-gray-800">■ 総括</p>
+                                        {(() => {
+                                          const s = parsed.summary;
+                                          const points: string[] = typeof s === "object" ? (s.points ?? []) : [s];
+                                          const implication: string = typeof s === "object" ? (s.implication ?? "") : "";
+                                          return (
+                                            <>
+                                              {points.length > 0 && (
+                                                <ul className="list-disc list-inside space-y-0.5 mt-1 text-gray-600">
+                                                  {points.map((p: string, k: number) => <li key={k}>{p}</li>)}
+                                                </ul>
+                                              )}
+                                              {implication && (
+                                                <p className="mt-1.5 text-gray-600 text-sm border-t border-gray-200 pt-1.5">{implication}</p>
+                                              )}
+                                            </>
+                                          );
+                                        })()}
                                       </div>
                                     )}
                                   </div>
